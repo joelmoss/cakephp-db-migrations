@@ -1,0 +1,9 @@
+#
+# migration YAML file
+#
+UP:
+  rename_table:
+    users: my_users
+DOWN:
+  rename_table:
+    my_users: users

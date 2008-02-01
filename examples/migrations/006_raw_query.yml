@@ -1,0 +1,9 @@
+#
+# migration YAML file
+#
+UP:
+  query:
+    users: INSERT INTO my_users SET first_name = 'joel'
+DOWN:
+  query:
+    users: DELETE FROM my_users WHERE first_name = 'joel'

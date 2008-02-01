@@ -1,0 +1,42 @@
+==== INSTALLATION ====
+
+1.  Simply copy the 'vendors' directory found in this package in your Cake root or your Cake app
+    root.
+    
+2.  You will need to ensure that Pear (http://pear.php.net) is installed on the machine that you
+    are developing on, and that you have installed the MDB2 (http://pear.php.net/package/MDB2)
+    Pear package.
+    
+3.  If you haven't already done so, or have not used any of the Cake console shells, you will
+    need to setup the Cake console on your machine. Please watch the relative screencast for
+    your OS at http://www.cakephp.org/screencasts
+    
+4.  Now just open up your console or terminal program and cd into your Cake app root.
+
+5.  Now enter the following in your console: (don't type the $ sign)
+    
+      $ cake
+      
+    This will list all the shells that are installed and ready to run. If you installed everything
+    correctly, then 'migrate' and 'fixtures' will be listed.
+    
+6.  Type in this:
+
+      $ cake migrate help
+      
+    This will display the help and usage instructions.
+    
+7.  To generate your first migration file, run this:
+
+      $ cake migrate generate my_first_migration
+      
+    Then edit the file it generates after which you can migrate:
+    
+      $ cake migrate
+      
+      
+      
+Please check out the examples directory within this package.
+      
+Updates, new releases and other resources can be found at http://code.google.com/p/cakephp-migrations/
+For further assistance and additional resources, please check out my Blog at http://joelmoss.info

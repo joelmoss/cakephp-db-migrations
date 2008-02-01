@@ -1,0 +1,11 @@
+#
+# migration YAML file
+#
+UP:
+  create_table:
+    users:
+      name: string
+      age: int
+      is_active: bool
+DOWN:
+  drop_table: users

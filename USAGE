@@ -1,0 +1,88 @@
+==== HOW TO USE MIGRATIONS ====
+
+Before continuing, please be sure to read the README and INSTALL files included in this package.
+
+
+==== COMMAND LINE OPTIONS ====
+
+  (don't type the $ sign)
+  
+  cake migrate
+  
+    - Migrates to the latest version (the last migration file)
+
+  cake migrate [version number]
+  
+    - Migrates to the version specified [version number]
+    
+      Example:  This will migrate up or down to version 2.
+    
+        $ cake migrate 2
+
+  cake migrate generate|gen|g [migration name]
+  
+    - Generates a migration file with the given name [migration name]
+
+      [migration name] must be alphanumeric, but can include spaces, hyphens and underscores.
+      
+      Example:  This will generate a migration file called '001_my_first_migration.yml'
+      
+        $ cake migrate g my_first_migration
+
+  cake migrate generate|gen|g from db [table1 table2 ...]
+  
+    - Generates a migration file for the specified table(s). The YAML is generated from the actual
+      database table.
+
+      If no tables are passed, it generates one single migration file called full_schema.yml using
+      your current database tables.
+      
+      Example:  This will generate a migration file for each given table name (which must already
+                exist in the DB), and populate the file with the schema found in each table.
+      
+        $ cake migrate g from db users groups
+        
+      Example:  This will generate a 'full_schema.yml' migration file, containing the schema for all
+                existing tables in your database.
+      
+        $ cake migrate g from db
+
+  cake migrate generate|gen|g sessions
+  
+    - Generates the cake sessions table.
+
+  cake migrate generate|gen|g create table_name
+  
+    - Generates a migration file that will create a table with the given underscored table_name.
+    
+      Example:  This will generate a migration file called '001_create_users.yml' and will attempt to
+                build the default YAML to create a table called 'users'.
+                
+        $ cake migrate g create users
+
+  cake migrate from_schema
+  
+    - Runs and migrates the full_schema.yml migration file if it exists.
+
+  cake migrate reset
+  
+    - Drops all tables and resets the current version to 0
+
+  cake migrate all
+  
+    - Migrates down to 0 and back up o the latest version
+
+  cake migrate down
+  
+    - Migrates down to the previous current version
+
+  cake migrate up
+  
+    - Migrates up from the current to the next version
+
+  cake migrate help
+  
+    - Displays the Help
+
+
+  append '-ds [data source]' to the command if you want to specify the datasource to use from database.php

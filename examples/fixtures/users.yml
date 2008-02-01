@@ -1,0 +1,34 @@
+#
+# Fixture YAML file
+#
+-
+ name: bob1
+ username: bobby1
+ password: mypass
+ created: .NOW
+-
+ name: bob2
+ username: bobby2
+ password: mypass
+ created: .NOW
+ modified: .NOW
+-
+ name: bob3
+ username: bobby3
+ password: mypass
+ created: .NOW
+-
+ name: bob4
+ username: bobby4
+ password: mypass
+ created: .NOW
+-
+ name: bob5
+ username: bobby5
+ password: mypass
+ created: .NOW
+-
+ name: bob6
+ username: bobby6
+ password: mypass
+ created: .NOW

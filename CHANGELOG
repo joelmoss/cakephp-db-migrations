@@ -1,0 +1,88 @@
+==== Migrate.php Changelog (started as of v3.0) ====
+
+v 3.6 - Jan 30 2008
+ [+] added the ability to generate migrations based on existing DB tables.
+     Thanks and credit go to Daniel Vecchiato (http://www.4webby.com) for his Yammy! shell.
+ [*] moved datasource definitions before DB is connected
+ [*] replaced Cake's alias up() function with PHP's strtoupper()
+ [+] added aliases for integer and boolean column types: int and bool
+ [+] added 'rename_field' action
+ [+] added 'rename_table' action
+
+v 3.5 - Oct 23 2007
+ [+] new column type (fkey) added.
+       Example:
+         type: fkey  # creates column 'type_id' as integer and with an index
+ [+] added sample YAML when generating
+ [+] can now generate a create_table migration file automatically by running 'cake migrate generate create table_name'
+ [+] can now create migration file for the Cake sessions table. Just run "cake migrate generate sessions".
+ [+] added 'gen' and 'g' method aliases for 'generate'
+ [*] now works with CakePHP 1.2 Pre-Beta
+
+v 3.4 - Aug 5 2007
+ [*] fixed bug in 'all' command which was not migrating up in the correct order                                                      
+ [*] fixed and refactored 'add_columns' migration code                                                                               
+ [*] fixed 'alter_column' migration code (it now works!)                                                                             
+ [+] can now rename fields as part of the 'alter_column' migration instructions. Simply specify 'new_name: the_new_name_of_the_field'
+ [+] can now migrate to a specific version by simply appending the version number to the 'cake migrate' command                      
+ [-] deprecated '-v' switch, and 'version' and 'v' methods as ways of specifying the version                                         
+
+v 3.3 - Jul 29 2007
+ [*] a little cleanup and refactoring, including more detailed and friendly output
+ [*] added more comments and documentation
+ [+] migration file numbering now uses three digits starting from 001
+ [+] added new 'version' and 'v' method as an alternative to the '-v' switch
+ [+] can now generate migration files as generator shell is now deprecated.
+ [+] can now run all migrations from the current version down, up to the latest version
+ [+] can now use shortened YAML when specifying column properties
+       Examples:
+         name: [string, 32, not_null]  # will create a string(varchar) column with length 32 and not null
+         - no_dates   # no date columns will be created (don't forget the hyphen)
+         - [no_dates, no_id]   # no date or ID columns will be created (don't forget the hyphen)
+
+v 3.2
+ [+] refactored (again!) to work with the new Cake console
+ [+] default type is now 'string', which means that a 'text(255)' column can be created without specifying the type
+ [+] can now specify 'fkey' or 'fkeys' as a column name, then passing one or more foreign key names
+       Examples:
+         fkey: user    # an integer column will be created called 'user_id'
+         fkeys: [user, group]    # two integer columns will be created called 'user_id' and 'group_id'
+
+v 3.1
+ [+] can now parse and run PHP code within migration files
+ [+] added string type. any column with a type of 'string' without a length set will default to varchar(255)
+ [+] automatically detects any column name ending with '_id' as an integer
+
+v 3.0
+ [+] refactored as a bake2 task compatible with CakePHP 1.2
+ 
+
+
+==== Fixtures.php Changelog (started as of v3.0) ====
+
+v 3.4.1 - 
+ [*] Fixed instantiation of fixture helpers.
+
+v 3.4 - Jan 30 2008
+ [+] Introduced Fixture Helpers.
+ [*] moved datasource definitions before DB is connected
+ [+] added 'g' alias for 'generate' method
+ 
+v 3.3
+ [+] can now generate fixture files as generator shell is now deprecated.
+ [+] added 'f' method allowing you tin specify which fixture files you want to run
+ [*] fixed bug that interpreted '0' as NOW
+ 
+v 3.2
+ [+] refactored (again!) to work wth the new Cake console
+ [+] options/variables no longer have to be passed as part of the command. You will be prompted if they are missing.
+ 
+v 3.1
+
+ [+] can now parse and run PHP code within migration files
+ [+] specifying 'all' instead of the table name will run all defined fixtures
+ 
+v 3.0
+ [+] refactored as a bake2 task compatible with CakePHP 1.2
+ 
+ 

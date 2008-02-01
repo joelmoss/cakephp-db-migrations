@@ -1,0 +1,11 @@
+#
+# migration YAML file
+#
+UP:
+  alter_field:
+    users:
+      first_name: [16, default_text, notnull]
+DOWN:
+  alter_field:
+    users:
+      first_name: string
