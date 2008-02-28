@@ -27,7 +27,7 @@ class FixturesShell extends Shell
     if (isset($this->params['ds'])) $this->dataSource = $this->params['ds'];
     if (isset($this->params['datasource'])) $this->dataSource = $this->params['datasource'];
     
-		uses ('model'.DS.'connection_manager');
+		uses('model'.DS.'connection_manager');
 		define('FIXTURES_PATH', APP_PATH .'config' .DS. 'fixtures');
 		if (!$this->_loadDbConfig()) exit;
 		$this->db =& ConnectionManager::getDataSource($this->dataSource);
@@ -159,38 +159,53 @@ class FixturesShell extends Shell
 
 		$model = new Model(false, $name);
 
-		$this->db->rawQuery("DELETE FROM `$name`");
-
+		$this->db->truncate($model);
+		
 		$count = 0;
+		$created = array();
 		foreach($data as $ri=>$r)
 		{
-			$fields = array();
-			$values = array();
-			foreach($r as $fi=>$f)
+			$records = array();
+			foreach($r as $fi => $f)
 			{
-				$fields[] = $fi;
-				if (preg_match("/^\.([A-Z_]+)$/", $f, $matches))
+			  if (preg_match("/_id$/", $fi) && !is_id($f))
+			  {
+			    $records[$fi] = $created[$f]['id'];
+			  }
+				elseif (preg_match("/^\.([A-Z_]+)$/", $f, $matches))
 				{
 				  $helper = Inflector::variable(strtolower($matches[1]));
 				  if (!method_exists($this->helpers, $helper)) $this->err("Found Helper '$f' in fixture '$name.yml', but Helper method '$helper()' does not exist.");
 
-				  $values[] = $this->helpers->$helper();
+				  $records[$fi] = $this->helpers->$helper();
 				}
 				else
 				{
-				  $values[] = $f;
+				  $records[$fi] = $f;
 				}
 			}
+			
+			if (isset($model->_schema['created']) && !array_key_exists('created', $records))
+			{
+			  $records['created'] = date('Y-m-d H:i:s');
+			}
 
-			$res = $this->db->create($model, $fields, $values);
+      $use_uuid = false;
+			if (!array_key_exists('id', $r) && isset($model->_schema['id']) && $model->_schema['id']['type'] == 'string' && $model->_schema['id']['length'] == 36)
+			{
+			  $records['id'] = String::uuid();
+			  $use_uuid = true;
+			}
+
+			$res = $this->db->create($model, array_keys($records), array_values($records));
+			if ($res)
+			{
+			  $records['id'] = $use_uuid ? $records['id'] : $model->id;
+			  $created[$ri] = $records;
+			}
 			$count++;
 		}
 		$this->out("$count rows inserted.");
-	}
-	
-	function _lorem()
-	{
-		return "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Maecenas quis justo. Cras purus lectus, rhoncus lacinia, ornare in, porttitor non, enim. Donec ac eros a pede semper porta. Nunc vel nibh. Praesent dignissim tellus facilisis ante. Suspendisse porttitor interdum nulla. Maecenas ligula. Sed nec ante. Ut tincidunt purus bibendum pede. Sed ullamcorper euismod justo. Phasellus euismod molestie odio. Pellentesque tristique pede et nisl. Phasellus lacus nunc, accumsan eu, vehicula eu, laoreet vel, tortor. Nam et pede eget lorem dapibus rutrum. Vivamus et orci. In adipiscing. Sed pulvinar pharetra lorem. Ut ullamcorper leo.";
 	}
 	
 	function _parsePhp($file)
@@ -199,7 +214,6 @@ class FixturesShell extends Shell
 		include ($file);
 		$buf = ob_get_contents();
 		ob_end_clean();
-		#echo $buf;exit;
 		return $buf;
 	}
 	
@@ -262,4 +276,13 @@ class FixturesShell extends Shell
 	}
 	
 }
+
+if (!function_exists('is_id'))
+{
+  function is_id($id)
+  {
+    return (preg_match("/^[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$/", $id) || is_numeric($id));
+  }
+}
+
 ?>

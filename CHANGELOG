@@ -1,5 +1,9 @@
 ==== Migrate.php Changelog (started as of v3.0) ====
 
+v 3.7 - Feb 28 2008
+ [*] Removed backticks from table name when changing migration version, as they caused errors when using SQLITE.
+ [+] Now supports Cake's UUID columns
+
 v 3.6 - Jan 30 2008
  [+] added the ability to generate migrations based on existing DB tables.
      Thanks and credit go to Daniel Vecchiato (http://www.4webby.com) for his Yammy! shell.
@@ -60,7 +64,10 @@ v 3.0
 
 ==== Fixtures.php Changelog (started as of v3.0) ====
 
-v 3.4.1 - 
+v 3.5 - Feb 28 2008
+ [+] Fixtures can now be named, and referenced in foreign keys
+ [+] If 'created' column exists in model, and it is not referenced in fixture, then the current datetime will automatically be entered.
+ [+] Now supports Cake's UUID columns
  [*] Fixed instantiation of fixture helpers.
 
 v 3.4 - Jan 30 2008

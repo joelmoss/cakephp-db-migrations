@@ -41,6 +41,20 @@ class MigrateShell extends Shell
 	  'fkey',
 	  'fkeys'
 	);
+	
+	var $uuid_format = array(
+	  'type'    => 'text',
+	  'notnull' => true,
+	  'length'  => 36
+	);
+	
+	var $id_format = array(
+	  'type'    => 'integer',
+	  'notnull' => true,
+	  'autoincrement'  => true
+	);
+	
+	var $use_uuid = false;
 
   function startup()
   {
@@ -550,12 +564,12 @@ class MigrateShell extends Shell
 				$this->out('');
 				if ($direction == 'up')
 				{
-					$r = $this->_db->exec("UPDATE `schema_info` SET version=version+1");
+					$r = $this->_db->exec("UPDATE schema_info SET version=version+1");
 					if (PEAR::isError($r)) $this->err($r->getDebugInfo());
 				}
 				else
 				{
-					$r = $this->_db->exec("UPDATE `schema_info` SET version=version-1");
+					$r = $this->_db->exec("UPDATE schema_info SET version=version-1");
 					if (PEAR::isError($r)) $this->err($r->getDebugInfo());
 				}
 			}
@@ -660,9 +674,7 @@ class MigrateShell extends Shell
 
 					if (!isset($fields['no_id']))
 					{
-						$rfields['id']['type'] = 'integer';
-						$rfields['id']['notnull'] = true;
-						$rfields['id']['autoincrement'] = true;
+					  $rfields['id'] = $this->use_uuid ? $this->uuid_format : $this->id_format;
 					}
 					
 					foreach ($fields as $field=>$props)
@@ -673,7 +685,7 @@ class MigrateShell extends Shell
 
 						if (preg_match("/\\_id$/", $field) && count($props) < 1)
 						{
-						  $rfields[$field]['type'] = 'integer';
+						  $rfields[$field] = $this->use_uuid ? $this->uuid_format : $this->id_format;
 						  $indexes[] = $field;
 						  continue;
 						}
@@ -692,7 +704,7 @@ class MigrateShell extends Shell
 
 						if ($props['type'] == 'fkey')
 						{
-						  $rfields[$field.'_id']['type'] = 'integer';
+						  $rfields[$field.'_id'] = $this->use_uuid ? $this->uuid_format : $this->id_format;
 						  $indexes[] = $field.'_id';
 						  continue;
 					  }
@@ -738,14 +750,14 @@ class MigrateShell extends Shell
 					
 					if (isset($fields['fkey']))
 					{
-					  $rfields[$fields['fkey'].'_id']['type'] = 'integer';
+					  $rfields[$fields['fkey'].'_id'] = $this->use_uuid ? $this->uuid_format : $this->id_format;
 					  $indexes[] = $fields['fkey'].'_id';
 					}
 					if (isset($fields['fkeys']))
 					{
 					  foreach($fields['fkeys'] as $key)
 					  {
-					    $rfields[$key.'_id']['type'] = 'integer';
+					    $rfields[$key.'_id'] = $this->use_uuid ? $this->uuid_format : $this->id_format;
 					    $indexes[] = $key.'_id';
 				    }
 					}
@@ -817,7 +829,7 @@ class MigrateShell extends Shell
           
             if (preg_match("/\\_id$/", $field) && count($props) < 1)
             {
-              $rfields[$field]['type'] = 'integer';
+              $rfields[$field] = $this->use_uuid ? $this->uuid_format : $this->id_format;
               continue;
             }
           
@@ -862,8 +874,8 @@ class MigrateShell extends Shell
             $rfields[$field]['default'] = NULL;
           }
 					
-					if (isset($fields['fkey'])) $rfields[$fields['fkey'].'_id']['type'] = 'integer';
-					if (isset($fields['fkeys'])) foreach($fields['fkeys'] as $key) $rfields[$key.'_id']['type'] = 'integer';
+					if (isset($fields['fkey'])) $rfields[$fields['fkey'].'_id'] = $this->use_uuid ? $this->uuid_format : $this->id_format;
+					if (isset($fields['fkeys'])) foreach($fields['fkeys'] as $key) $rfields[$key.'_id'] = $this->use_uuid ? $this->uuid_format : $this->id_format;
 
 					$r = $this->_db->alterTable($table, array('add'=>$rfields), false);
 					if (PEAR::isError($r)) $this->err($r->getDebugInfo());
