@@ -1,7 +1,24 @@
 ==== Migrate.php Changelog (started as of v3.0) ====
 
+TODO:
+ replace mdb2 with datadict
+ generate migrations in arrays format
+ transactions
+ web based interface?
+ FIXES:
+  options format - name: [string:32, notnull, 2]
+
+v 4.0 rc1 - May 2008 ...
+ [+] Version numbers now use timestamps so as to minimize conflicts
+ [+] Now supports interleaved migrations;
+        when migrating up, will run migrations that have not yet been run, and will ignore any non-run migrations when running down.
+ [+] Added info option (cake migrate info), which shows information on migrations
+ [+] Can now specify version number when running up/down, thus allowing you to only run the up/down block of a specific migration
+ [+] Schema table name is now customizable
+ [+] Now supports PHP arrays in migration files
+
 v 3.7 - Feb 28 2008
- [*] Removed backticks from table name when changing migration version, as they caused errors when using SQLITE.
+ [*] Removed back ticks from table name when changing migration version, as they caused errors when using SQLITE.
  [+] Now supports Cake's UUID columns
 
 v 3.6 - Jan 30 2008

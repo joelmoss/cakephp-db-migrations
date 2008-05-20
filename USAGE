@@ -72,13 +72,15 @@ Before continuing, please be sure to read the README and INSTALL files included 
   
     - Migrates down to 0 and back up o the latest version
 
-  cake migrate down
+  cake migrate down [version]
   
-    - Migrates down to the previous current version
+    - Migrates down to the previous current version.
+      If [version] is specified will run the DOWN section only on that specified version.
 
-  cake migrate up
+  cake migrate up [version]
   
-    - Migrates up from the current to the next version
+    - Migrates up from the current to the next version.
+      If [version] is specified will run the UP section only on that specified version.
 
   cake migrate help
   

@@ -14,14 +14,32 @@ with everyone else's.
 The Migrations shell will generate a migration file for each DB change you want to make. This file
 can include any number of DB changes.
 
-The Migration files use YAML; the extremely simple and human friendly data standard. So instead of
-having to write SQL queries, you can write a short YAML structure that will do the same thing:
+The Migration files support YAML and PHP array's. So instead of having to write SQL queries, you
+can write a short YAML structure that will do the same thing:
 
   create_table:
     users:
       name: string
       age: int
       is_active: bool
+      
+or the equivalent in a PHP array:
+
+  array(
+    'create_table' => array(
+      'users' => array(
+        'name' => array(
+          'type' => 'string'
+        )
+        'age' => array(
+          'type' => 'int'
+        )
+        'is_active' => array(
+          'type' => 'bool'
+        )
+      )
+    )
+  )
 
 The above YAML code will create a table called 'users'. This is equivalent to running the following
 MySQL code:
@@ -45,4 +63,4 @@ into your database.
 Please check out the examples directory within this package.
 
 Updates, new releases and other resources can be found at http://code.google.com/p/cakephp-migrations/
-For further assistance and additional resources, please check out my Blog at http://joelmoss.info
+For further assistance and additional resources, please check out my Blog at http://developingwithstyle.com
