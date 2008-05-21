@@ -8,7 +8,10 @@ TODO:
  FIXES:
   options format - name: [string:32, notnull, 2]
 
-v 4.0 rc1 - May 2008 ...
+v 4.0 RC1 - May ??
+ [*] Fixed bug with old style version numbers
+
+v 4.0 Beta 1 - May 20, 2008 ...
  [+] Version numbers now use timestamps so as to minimize conflicts
  [+] Now supports interleaved migrations;
         when migrating up, will run migrations that have not yet been run, and will ignore any non-run migrations when running down.

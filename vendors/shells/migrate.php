@@ -1194,7 +1194,7 @@ class MigrateShell extends Shell
         $files = $folder->find("[0-9]+_.+\.(yml|php)");
         $db = array();
         foreach ($this->_db->queryAll("SELECT * FROM {$this->schema_table}") as $row) {
-            $db[$row['version']] = $row['datetime'];
+            $db[$this->_versionIt($row['version'])] = $row['datetime'];
         }
 
         foreach ($files as $file) {
