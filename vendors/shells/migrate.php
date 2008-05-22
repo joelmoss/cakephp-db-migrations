@@ -756,10 +756,10 @@ class MigrateShell extends Shell
                         $uniques = array();
                         $pk = array();
                     
-                        if (isset($fields[0])) $fields = am($fields, $this->_getProperties($fields[0]));
+                        if (isset($fields[0])) $fields = array_merge($fields, $this->_getProperties($fields[0]));
                         unset($fields[0]);
 
-                        if (!isset($fields['no_id']) && !(isset($fields['id']) && !$fields['id'])) {
+                        if (!array_key_exists('no_id', $fields) && !(isset($fields['id']) && !$fields['id'])) {
                             if ($this->use_uuid || (isset($fields['id']) && $fields['id'] == 'uuid')) {
                                 $rfields['id'] = $this->uuid_format;
                                 $pk['id'] = '';
@@ -769,7 +769,12 @@ class MigrateShell extends Shell
                         }
                         
                         foreach ($fields as $field => $props) {
-                            if (preg_match("/^no_id|created|modified|no_dates|fkey|fkeys|id$/", $field)) continue;
+                            if (preg_match("/^no_id|created|modified|fkey|fkeys|id$/", $field)) continue;
+                            
+                            if ($field == 'no_dates') {
+                                $fields['no_dates'] = true;
+                                continue;
+                            }
                             
                             if ($field == 'mysql_engine' || $field == 'mysql_type') {
                                 $table_props['type'] = $props;
@@ -793,7 +798,7 @@ class MigrateShell extends Shell
                         
                             if (!empty($props)) $props = $this->_getProperties($props);
 
-                            if (preg_match("/\\_id$/", $field) && count($props) < 1) {
+                            if ($field != 'no_id' && preg_match("/\\_id$/", $field) && count($props) < 1) {
                                 $rfields[$field] = ($this->use_uuid || (isset($props['use_uuid']) && $props['use_uuid'])) ?
                                     $this->uuid_format : $this->id_format;
                                 if (isset($rfields[$field]['autoincrement'])) unset($rfields[$field]['autoincrement']);
