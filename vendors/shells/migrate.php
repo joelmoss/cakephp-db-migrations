@@ -743,7 +743,6 @@ class MigrateShell extends Shell
 
     function _array2Sql($array)
     {
-        // debug($array);exit;
         foreach ($array as $name=>$action) {
             switch ($name) {
                 case 'create_table':
@@ -771,6 +770,26 @@ class MigrateShell extends Shell
                         
                         foreach ($fields as $field => $props) {
                             if (preg_match("/^no_id|created|modified|no_dates|fkey|fkeys|id$/", $field)) continue;
+                            
+                            if ($field == 'mysql_engine' || $field == 'mysql_type') {
+                                $table_props['type'] = $props;
+                                continue;
+                            }
+                            
+                            if ($field == 'mysql_comment') {
+                                $table_props['comment'] = $props;
+                                continue;
+                            }
+                            
+                            if ($field == 'mysql_charset') {
+                                $table_props['charset'] = $props;
+                                continue;
+                            }
+                            
+                            if ($field == 'mysql_collate') {
+                                $table_props['collate'] = $props;
+                                continue;
+                            }
                         
                             if (!empty($props)) $props = $this->_getProperties($props);
 
@@ -846,7 +865,7 @@ class MigrateShell extends Shell
                             }
                         }
 
-                        $r = $this->_db->createTable($table, $rfields, array('primary' => $pk));
+                        $r = $this->_db->createTable($table, $rfields, array_merge(array('primary' => $pk), $table_props));
                         if (PEAR::isError($r)) $this->err($r->getUserInfo());
                     
                         if (count($indexes) > 0) {
