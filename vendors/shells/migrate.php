@@ -767,6 +767,7 @@ class MigrateShell extends Shell
 
                             if (preg_match("/\\_id$/", $field) && count($props) < 1) {
                                 $rfields[$field] = $this->use_uuid ? $this->uuid_format : $this->id_format;
+                                if (isset($rfields[$field]['autoincrement'])) unset($rfields[$field]['autoincrement']);
                                 $indexes[] = $field;
                                 continue;
                             }
@@ -783,6 +784,7 @@ class MigrateShell extends Shell
 
                             if ($props['type'] == 'fkey') {
                                 $rfields[$field.'_id'] = $this->use_uuid ? $this->uuid_format : $this->id_format;
+                                if (isset($rfields[$field.'_id']['autoincrement'])) unset($rfields[$field.'_id']['autoincrement']);
                                 $indexes[] = $field.'_id';
                                 continue;
                             }
@@ -822,11 +824,13 @@ class MigrateShell extends Shell
                     
                         if (isset($fields['fkey'])) {
                             $rfields[$fields['fkey'] . '_id'] = $this->use_uuid ? $this->uuid_format : $this->id_format;
+                            if (isset($rfields[$fields['fkey'].'_id']['autoincrement'])) unset($rfields[$fields['fkey'].'_id']['autoincrement']);
                             $indexes[] = $fields['fkey'] . '_id';
                         }
                         if (isset($fields['fkeys'])) {
                             foreach($fields['fkeys'] as $key) {
                                 $rfields[$key . '_id'] = $this->use_uuid ? $this->uuid_format : $this->id_format;
+                                if (isset($rfields[$key.'_id']['autoincrement'])) unset($rfields[$key.'_id']['autoincrement']);
                                 $indexes[] = $key . '_id';
                             }
                         }
