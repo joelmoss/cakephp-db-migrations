@@ -76,7 +76,7 @@ class MigrateShell extends Shell
     /**
      * If true, will use Cake's UUID's for primary key.
      */
-    var $use_uuid = true;
+    var $use_uuid = false;
 
     /**
      * DB column/field types
@@ -729,6 +729,9 @@ class MigrateShell extends Shell
             case 'no_id':
                 $_props['no_id'] = true;
                 break;
+            case 'uuid':
+                $_props['use_uuid'] = true;
+                break;
             default:
                 $_props['default'] = $prop;
                 break;
@@ -740,6 +743,7 @@ class MigrateShell extends Shell
 
     function _array2Sql($array)
     {
+        // debug($array);exit;
         foreach ($array as $name=>$action) {
             switch ($name) {
                 case 'create_table':
@@ -756,17 +760,23 @@ class MigrateShell extends Shell
                         if (isset($fields[0])) $fields = am($fields, $this->_getProperties($fields[0]));
                         unset($fields[0]);
 
-                        if (!isset($fields['no_id'])) {
-                            $rfields['id'] = $this->use_uuid ? $this->uuid_format : $this->id_format;
+                        if (!isset($fields['no_id']) && !(isset($fields['id']) && !$fields['id'])) {
+                            if ($this->use_uuid || (isset($fields['id']) && $fields['id'] == 'uuid')) {
+                                $rfields['id'] = $this->uuid_format;
+                                $pk['id'] = '';
+                            } else {
+                                $rfields['id'] = $this->id_format;
+                            }
                         }
-                    
-                        foreach ($fields as $field=>$props) {
-                            if (preg_match("/^no_id|created|modified|no_dates|fkey|fkeys$/", $field)) continue;
+                        
+                        foreach ($fields as $field => $props) {
+                            if (preg_match("/^no_id|created|modified|no_dates|fkey|fkeys|id$/", $field)) continue;
                         
                             if (!empty($props)) $props = $this->_getProperties($props);
 
                             if (preg_match("/\\_id$/", $field) && count($props) < 1) {
-                                $rfields[$field] = $this->use_uuid ? $this->uuid_format : $this->id_format;
+                                $rfields[$field] = ($this->use_uuid || (isset($props['use_uuid']) && $props['use_uuid'])) ?
+                                    $this->uuid_format : $this->id_format;
                                 if (isset($rfields[$field]['autoincrement'])) unset($rfields[$field]['autoincrement']);
                                 $indexes[] = $field;
                                 continue;
@@ -783,7 +793,8 @@ class MigrateShell extends Shell
                             }
 
                             if ($props['type'] == 'fkey') {
-                                $rfields[$field.'_id'] = $this->use_uuid ? $this->uuid_format : $this->id_format;
+                                $rfields[$field.'_id'] = ($this->use_uuid || (isset($props['use_uuid']) && $props['use_uuid'])) ?
+                                    $this->uuid_format : $this->id_format;
                                 if (isset($rfields[$field.'_id']['autoincrement'])) unset($rfields[$field.'_id']['autoincrement']);
                                 $indexes[] = $field.'_id';
                                 continue;

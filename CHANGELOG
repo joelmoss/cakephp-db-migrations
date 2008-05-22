@@ -1,7 +1,6 @@
 ==== Migrate.php Changelog (started as of v3.0) ====
 
 TODO:
- replace mdb2 with datadict
  generate migrations in arrays format
  transactions
  web based interface?
@@ -11,6 +10,10 @@ TODO:
 v 4.0 RC1 - May ??
  [*] Fixed bug with old style version numbers
  [*] Fixed bug where fkeys were trying to be created with auto_increment
+ [+] Can now specify whether to use Cake's UUID for the ID column within migration files. Example: "id: uuid"
+ [+] Can now pass "id: false" within migration file, and no ID column will be created.
+ [-] Deprecated "no_id: true" in favour of "id: false"
+ [*] ID column is now set as Primary Key when using UUID type.
 
 v 4.0 Beta 1 - May 20, 2008 ...
  [+] Version numbers now use timestamps so as to minimize conflicts
@@ -35,9 +38,8 @@ v 3.6 - Jan 30 2008
  [+] added 'rename_table' action
 
 v 3.5 - Oct 23 2007
- [+] new column type (fkey) added.
-       Example:
-         type: fkey  # creates column 'type_id' as integer and with an index
+ [+] new column type (fkey) added. Example:
+       type: fkey  # creates column 'type_id' as integer and with an index
  [+] added sample YAML when generating
  [+] can now generate a create_table migration file automatically by running 'cake migrate generate create table_name'
  [+] can now create migration file for the Cake sessions table. Just run "cake migrate generate sessions".
@@ -62,8 +64,7 @@ v 3.3 - Jul 29 2007
  [+] can now use shortened YAML when specifying column properties
        Examples:
          name: [string, 32, not_null]  # will create a string(varchar) column with length 32 and not null
-         - no_dates   # no date columns will be created (don't forget the hyphen)
-         - [no_dates, no_id]   # no date or ID columns will be created (don't forget the hyphen)
+         no_dates: true   # no date columns will be created
 
 v 3.2
  [+] refactored (again!) to work with the new Cake console
