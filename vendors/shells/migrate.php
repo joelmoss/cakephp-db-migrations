@@ -985,7 +985,7 @@ class MigrateShell extends Shell
                             $r = $this->_db->alterTable($table, array('remove'=>$rfields), false);
                             if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                         } else {
-                            $this->out("      > adding column '$fields' on '$table'");
+                            $this->out("      > dropping column '$fields' on '$table'");
                             $r = $this->_db->alterTable($table, array('remove'=>array($fields=>array())), false);
                             if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                         }

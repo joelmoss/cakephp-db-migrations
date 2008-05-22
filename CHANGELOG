@@ -13,7 +13,7 @@ v 4.0 RC1 - May ??
  [+] Can now specify whether to use Cake's UUID for the ID column within migration files. Example: "id: uuid"
  [+] Can now pass "id: false" within migration file, and no ID column will be created.
  [-] Deprecated "no_id: true" in favour of "id: false"
- [*] ID column is now set as Primary Key when using UUID type.
+ [*] ID column is now correctly set as Primary Key when using UUID type.
 
 v 4.0 Beta 1 - May 20, 2008 ...
  [+] Version numbers now use timestamps so as to minimize conflicts
