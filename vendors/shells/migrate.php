@@ -345,9 +345,6 @@ class MigrateShell extends Shell
         if (empty($__tables)) $this->error('', '  There are currently no tables found in the database.');
 
         if (!$allTables) {
-            $this->_getMigrations();
-
-            $i=0;
             foreach ($__tables as $__table) {
                 $out = $this->_buildYaml($__table);
                 $this->createFile(MIGRATIONS_PATH .DS. gmdate("U") .'_create_'. $__table. '.yml', $out);
@@ -411,7 +408,7 @@ class MigrateShell extends Shell
             }
         }
         
-        if (!array_key_exists('id', $modelFields)) $tableSchema[] = 'no_id';
+        if (!array_key_exists('id', $modelFields)) $tableSchema['id'] = false;
         return $tableSchema; 
     }
 
@@ -425,7 +422,6 @@ class MigrateShell extends Shell
         $this->_listAll($this->dataSource);
 
         $enteredModel = '';
-
         while ($enteredModel == '') {
             $enteredModel = $this->in('Enter a number from the list above, or type in the name of another model.');
             if ($enteredModel == '' || intval($enteredModel) > count($this->_modelNames)) {
