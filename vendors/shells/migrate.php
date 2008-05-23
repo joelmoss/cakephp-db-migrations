@@ -350,8 +350,7 @@ class MigrateShell extends Shell
             $i=0;
             foreach ($__tables as $__table) {
                 $out = $this->_buildYaml($__table);
-                $new_migration_count = $this->_versionIt($this->migration_count+$i++);
-                $this->createFile(MIGRATIONS_PATH .DS. $new_migration_count .'_create_'. $__table. '.yml', $out);
+                $this->createFile(MIGRATIONS_PATH .DS. gmdate("U") .'_create_'. $__table. '.yml', $out);
             }
         } else {
             $this->createFile(MIGRATIONS_PATH .DS. 'full_schema.yml', $this->_buildYaml($__tables));
@@ -375,7 +374,7 @@ class MigrateShell extends Shell
         $out .= '#'."\n";
         
         if (function_exists('syck_dump')) {
-            return @syck_dump($dbShema);
+            return syck_dump($dbShema);
         } else {
             App::import('Vendors', 'Spyc');
             return Spyc::YAMLDump($dbShema);

@@ -1,10 +1,13 @@
 #
 # migration YAML file
 #
+# This creates a table called "users" with the columns name, age and is_active.
+#   "name" - Because no type is specified, will be assigned as type of string.
+#   
 UP:
   create_table:
     users:
-      name: string
+      name:
       age: int
       is_active: bool
 DOWN:
