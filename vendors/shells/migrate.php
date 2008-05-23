@@ -376,7 +376,7 @@ class MigrateShell extends Shell
         if (function_exists('syck_dump')) {
             return syck_dump($dbShema);
         } else {
-            App::import('Vendors', 'Spyc');
+            App::import('Vendor', 'Spyc');
             return Spyc::YAMLDump($dbShema);
         }
     }
@@ -677,7 +677,7 @@ class MigrateShell extends Shell
             if (function_exists('syck_load')) {
                 $array = syck_load($yml);
             } else {
-                App::import('Vendors', 'Spyc');
+                App::import('Vendor', 'Spyc');
                 $array = Spyc::YAMLLoad($yml);
             }
             if (!is_array($array)) return "Unable to parse YAML Migration file";
