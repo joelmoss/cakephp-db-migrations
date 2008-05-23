@@ -93,6 +93,7 @@ class MigrateShell extends Shell
         'date',
         'time',
         'timestamp',
+        'datetime',
         'fkey',
         'fkeys'
     );
@@ -383,10 +384,8 @@ class MigrateShell extends Shell
         $useTable = low(Inflector::pluralize($tableName));
     
         App::import('Model');       
-        $tempModel = new Model(false, $tableName);
-        
-        $db =& ConnectionManager::getDataSource($this->dataSource);
-        $modelFields = $db->describe($tempModel);
+        $tempModel = new Model(false, $tableName, $this->dataSource);
+        $modelFields = $tempModel->_schema;
         
         if (!array_key_exists('created', $modelFields) && !array_key_exists('modified', $modelFields)) {
             $tableSchema['no_dates'] = '';
@@ -693,43 +692,47 @@ class MigrateShell extends Shell
         $_props = array();
         if (!is_array($props)) $props = array($props);
 
-        foreach ($props as $prop) {
-            switch ($prop) {
-            case is_numeric($prop):
-                $_props['length'] = $prop;
-                break;
-            case 'is_null':
-            case 'isnull':
-                $_props['notnull'] = false;
-                break;
-            case 'not_null':
-            case 'notnull':
-                $_props['notnull'] = true;
-                break;
-            case in_array($prop, $this->types):
-                $_props['type'] = $prop;
-                break;
-            case 'index':
-                $_props['index'] = true;
-                break;
-            case 'unique':
-                $_props['unique'] = true;
-                break;
-            case 'primary':
-                $_props['primary'] = true;
-                break;
-            case 'no_dates':
-                $_props['no_dates'] = true;
-                break;
-            case 'no_id':
-                $_props['no_id'] = true;
-                break;
-            case 'uuid':
-                $_props['use_uuid'] = true;
-                break;
-            default:
-                $_props['default'] = $prop;
-                break;
+        foreach ($props as $key => $prop) {
+            if (is_numeric($key)) {
+                switch ($prop) {
+                    case is_numeric($prop):
+                        $_props['length'] = $prop;
+                        break;
+                    case 'is_null':
+                    case 'isnull':
+                        $_props['notnull'] = false;
+                        break;
+                    case 'not_null':
+                    case 'notnull':
+                        $_props['notnull'] = true;
+                        break;
+                    case in_array($prop, $this->types):
+                        $_props['type'] = $prop;
+                        break;
+                    case 'index':
+                        $_props['index'] = true;
+                        break;
+                    case 'unique':
+                        $_props['unique'] = true;
+                        break;
+                    case 'primary':
+                        $_props['primary'] = true;
+                        break;
+                    case 'no_dates':
+                        $_props['no_dates'] = true;
+                        break;
+                    case 'no_id':
+                        $_props['no_id'] = true;
+                        break;
+                    case 'uuid':
+                        $_props['use_uuid'] = true;
+                        break;
+                    default:
+                        $_props['default'] = $prop;
+                        break;
+                }
+            } else {
+                $_props[$key] = $prop;
             }
         }
         if (!array_key_exists('type', $_props)) $_props['type'] = 'string';
@@ -764,7 +767,7 @@ class MigrateShell extends Shell
                         }
                         
                         foreach ($fields as $field => $props) {
-                            if (preg_match("/^no_id|created|modified|fkey|fkeys|id$/", $field)) continue;
+                            if (in_array($field, array('no_id','created','modified','fkey','fkeys','id'))) continue;
                             
                             if ($field == 'no_dates') {
                                 $fields['no_dates'] = true;
@@ -801,6 +804,11 @@ class MigrateShell extends Shell
                                 continue;
                             }
 
+                            if ($props['type'] == 'datetime') {
+                                $props['type'] = 'timestamp';
+                                $rfields[$field]['type'] = 'timestamp';
+                            }
+
                             if ($props['type'] == 'int') {
                                 $props['type'] = 'integer';
                                 $rfields[$field]['type'] = 'integer';
@@ -827,11 +835,8 @@ class MigrateShell extends Shell
                             }
 
                             if (isset($props['length'])) $rfields[$field]['length'] = $props['length'];
-
                             if (isset($props['notnull'])) $rfields[$field]['notnull'] = $props['notnull'] ? true : false;
-
                             if (isset($props['default'])) $rfields[$field]['default'] = $props['default'];
-
                             if (isset($props['index'])) $indexes[] = $field;
                             if (isset($props['unique'])) $uniques[] = $field;
                             if (isset($props['primary'])) $pk[$field] = '';
