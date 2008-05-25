@@ -14,8 +14,8 @@
  *
  */
 
-vendor('Spyc');
-uses('file', 'folder');
+App::import('Core', array('file', 'folder'));
+App::import('Vendor', 'Spyc');
 
 class FixturesShell extends Shell
 {
