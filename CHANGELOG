@@ -1,13 +1,6 @@
 ==== Migrate.php Changelog (started as of v3.0) ====
 
-TODO:
- generate migrations in arrays format
- transactions
- web based interface?
- FIXES:
-  options format - name: [string:32, notnull, 2]
-
-v 4.0 RC1 - May ??
+v 4.0 RC1 - May 25, 2008
  [*] Fixed bug with old style version numbers
  [*] Fixed bug where fkeys were trying to be created with auto_increment
  [+] Can now specify whether to use Cake's UUID for the ID column within migration files. Example: "id: uuid"
@@ -16,7 +9,7 @@ v 4.0 RC1 - May ??
  [*] ID column is now correctly set as Primary Key when using UUID type.
  [+] Added support for MySQL specific table options (comments, engine/type, collate and charset)
 
-v 4.0 Beta 1 - May 20, 2008 ...
+v 4.0 Beta 1 - May 20, 2008
  [+] Version numbers now use timestamps so as to minimize conflicts
  [+] Now supports interleaved migrations;
         when migrating up, will run migrations that have not yet been run, and will ignore any non-run migrations when running down.
