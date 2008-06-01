@@ -767,7 +767,9 @@ class MigrateShell extends Shell
                         }
                         
                         foreach ($fields as $field => $props) {
-                            if (in_array($field, array('no_id','created','modified','fkey','fkeys','id'))) continue;
+                            if (in_array($field, array('no_id','created','modified','fkey','fkeys'))) continue;
+                            
+                            if ($field == 'id' && $props === false) continue;
                             
                             if ($field == 'no_dates') {
                                 $fields['no_dates'] = true;
