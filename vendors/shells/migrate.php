@@ -756,9 +756,9 @@ class MigrateShell extends Shell
                     
                         if (isset($fields[0])) $fields = array_merge($fields, $this->_getProperties($fields[0]));
                         unset($fields[0]);
-
-                        if (!array_key_exists('no_id', $fields) && !(isset($fields['id']) && !$fields['id'])) {
-                            if ($this->use_uuid || (isset($fields['id']) && $fields['id'] == 'uuid')) {
+                        
+                        if (!array_key_exists('no_id', $fields)) {
+                            if ($this->use_uuid) {
                                 $rfields['id'] = $this->uuid_format;
                                 $pk['id'] = '';
                             } else {
@@ -769,7 +769,17 @@ class MigrateShell extends Shell
                         foreach ($fields as $field => $props) {
                             if (in_array($field, array('no_id','created','modified','fkey','fkeys'))) continue;
                             
-                            if ($field == 'id' && $props === false) continue;
+                            if ($field == 'id') {
+                                if ($props === false) {
+                                    unset($rfields['id']);
+                                    if (isset($pk['id'])) unset($pk['id']);
+                                    continue;
+                                } elseif ($props == 'uuid') {
+                                    $rfields['id'] = $this->uuid_format;
+                                    if (!isset($pk['id'])) $pk['id'] = '';
+                                    continue;
+                                }
+                            }
                             
                             if ($field == 'no_dates') {
                                 $fields['no_dates'] = true;
