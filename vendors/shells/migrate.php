@@ -138,6 +138,8 @@ class MigrateShell extends Shell
      */
     function info()
     {
+        $this->_hasMigrations();
+        
         $this->hr();
         $this->out('');
         $this->out('Your Migrations (' . count($this->migrations) . ') ...    (* denotes migration not yet run)');
@@ -161,6 +163,8 @@ class MigrateShell extends Shell
    */
     function main()
     {
+        $this->_hasMigrations();
+        
         $to = (count($this->args) && is_numeric($this->args[0])) ? $this->args[0] : $this->target_migration['id'];
         $this->target_migration = $this->migrations[$to];
         
@@ -177,6 +181,8 @@ class MigrateShell extends Shell
    */
     function down()
     {
+        $this->_hasMigrations();
+        
         if (count($this->args) && is_numeric($this->args[0])) {
             $this->target_migration = $this->migrations[$this->args[0]];
             $this->_run('down');
@@ -209,6 +215,8 @@ class MigrateShell extends Shell
    */
     function up()
     {
+        $this->_hasMigrations();
+        
         if (count($this->args) && is_numeric($this->args[0])) {
             $this->target_migration = $this->migrations[$this->args[0]];
             $this->_run('up');
@@ -271,6 +279,8 @@ class MigrateShell extends Shell
      */
     function all()
     {
+        $this->_hasMigrations();
+        
         if ($this->current_migration['id'] === 0) {
             $this->_run();
         } else {
@@ -1295,6 +1305,19 @@ class MigrateShell extends Shell
             system('mate '. $file);
         }
         $this->out('');
+    }
+    
+    function _hasMigrations()
+    {
+        if (empty($this->migrations)) {
+            $this->hr();
+            $this->out('');
+            $this->out('  ** No migrations found **');
+            $this->out('');
+            $this->hr();
+            $this->out('');
+            exit;
+        }
     }
     
   /**
