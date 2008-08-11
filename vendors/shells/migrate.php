@@ -839,6 +839,7 @@ class MigrateShell extends Shell
                             if ($props['type'] == 'bool') {
                                 $props['type'] = 'boolean';
                                 $rfields[$field]['type'] = 'boolean';
+                                $rfields[$field]['default'] = 0;
                             }
 
                             if ($props['type'] == 'fkey') {
@@ -958,6 +959,7 @@ class MigrateShell extends Shell
                             if ($props['type'] == 'bool') {
                                 $props['type'] = 'boolean';
                                 $rfields[$field]['type'] = 'boolean';
+                                $rfields[$field]['default'] = 0;
                             }
 
                             $props['type'] = isset($props['type']) ? $props['type'] : 'string';
