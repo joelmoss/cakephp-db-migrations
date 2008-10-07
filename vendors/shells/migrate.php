@@ -35,6 +35,11 @@ class MigrateShell extends Shell
     var $db;
     
     /**
+     * Should we use a table prefix, as specified in DB config
+     */
+    var $_usePrefix = false;
+    
+    /**
      * Array of migrations
      */
     var $migrations = array();
@@ -752,11 +757,15 @@ class MigrateShell extends Shell
 
     function _array2Sql($array)
     {
-        foreach ($array as $name=>$action) {
+        foreach ($array as $name => $action) {
             switch ($name) {
                 case 'create_table':
                 case 'create_tables':
-                    foreach ($action as $table=>$fields) {
+                    foreach ($action as $table => $fields) {
+                        if ($this->_usePrefix) {
+                            $table = $this->_usePrefix . $table;
+                        }
+                        
                         $this->out("      > creating table '$table'");
 
                         $rfields = array();
@@ -920,11 +929,17 @@ class MigrateShell extends Shell
                 case 'drop_tables':
                     if (is_array($action)) {
                         foreach ($action as $table) {
+                            if ($this->_usePrefix) {
+                                $table = $this->_usePrefix . $table;
+                            }
                             $this->out("      > dropping table '$table'");
                             $r = $this->_db->dropTable($table);
                             if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                         }
                     } else {
+                        if ($this->_usePrefix) {
+                            $action = $this->_usePrefix . $action;
+                        }
                         $this->out("      > dropping table '$action'");
                         $r = $this->_db->dropTable($action);
                         if (PEAR::isError($r)) $this->err($r->getDebugInfo());
@@ -934,7 +949,11 @@ class MigrateShell extends Shell
                 case 'add_field':
                 case 'add_columns':
                 case 'add_column':
-                    foreach ($action as $table=>$fields) {
+                    foreach ($action as $table => $fields) {
+                        if ($this->_usePrefix) {
+                            $table = $this->_usePrefix . $table;
+                        }
+                        
                         $rfields = array();
                         $indexes = array();
                         $uniques = array();
@@ -1025,7 +1044,11 @@ class MigrateShell extends Shell
                 case 'drop_field':
                 case 'drop_columns':
                 case 'drop_column':
-                    foreach ($action as $table=>$fields) {
+                    foreach ($action as $table => $fields) {
+                        if ($this->_usePrefix) {
+                            $table = $this->_usePrefix . $table;
+                        }
+                        
                         if (is_array($fields)) {
                             foreach($fields as $nil=>$field) {
                                 $this->out("      > dropping column '$field' on '$table'");
@@ -1043,6 +1066,10 @@ class MigrateShell extends Shell
                 case 'rename_table':
                 case 'rename_tables':
                     foreach ($action as $current_name => $new_name) {
+                        if ($this->_usePrefix) {
+                            $current_name = $this->_usePrefix . $current_name;
+                            $new_name = $this->_usePrefix . $new_name;
+                        }
                         $this->out("      > renaming table '$current_name' to '$new_name'");
                         $r = $this->_db->alterTable($current_name, array('name'=>$new_name), false);
                         if (PEAR::isError($r)) $this->err($r->getDebugInfo());
@@ -1053,6 +1080,9 @@ class MigrateShell extends Shell
                 case 'rename_column':
                 case 'rename_columns':
                     foreach ($action as $table => $fields) {
+                        if ($this->_usePrefix) {
+                            $table = $this->_usePrefix . $table;
+                        }
                         foreach($fields as $field => $new_name) {
                             $this->out("      > renaming column '$field' to '$new_name' on '$table'");
 
@@ -1075,7 +1105,11 @@ class MigrateShell extends Shell
                 case 'alter_fields':
                 case 'alter_column':
                 case 'alter_columns':
-                    foreach ($action as $table=>$fields) {
+                    foreach ($action as $table => $fields) {
+                        if ($this->_usePrefix) {
+                            $table = $this->_usePrefix . $table;
+                        }
+                        
                         $change = array();
                         $indexes = array();
                         $uniques = array();
@@ -1222,6 +1256,11 @@ class MigrateShell extends Shell
             'debug'         =>  'DEBUG',
             'portability'   =>  'DB_PORTABILITY_ALL'
         );
+        
+        if (isset($config['prefix'])) {
+            $this->_usePrefix = $config['prefix'];
+        }
+        
         $this->_db = &MDB2::connect($dsn, $options);
         if (PEAR::isError($this->_db)) $this->error('MDB2 ERROR', $this->_db->getDebugInfo());
         $this->_db->setFetchMode(MDB2_FETCHMODE_ASSOC);
