@@ -14,8 +14,7 @@
  *
  */
 
-App::import('Core', array('file', 'folder'));
-App::import('Vendor', 'Spyc');
+App::import('Core', array('file', 'folder', 'model'));
 
 class FixturesShell extends Shell
 {
@@ -81,31 +80,45 @@ class FixturesShell extends Shell
 	{
 		$folder = new Folder(FIXTURES_PATH, true, 0777);
 		$tables = $this->db->sources();
+
 		if (!count($tables)) $this->error('Database contains no tables', "Please generate and run your migrations before your fixtures.\n");
 		
+		if (isset($this->args[0]) && !empty($this->args[0])) {
+		    $table = split(',', $this->args[0]);
+		}
+
 		$this->out('');
-		$data = "#\n# Fixture YAML file\n#\n#\n# Example:-\n# -\n#  first_name: Bob\n#  last_name: Bones\n#  created: NOW\n#\n";
-		foreach ($tables as $i=>$t)
-		{
-			if ($t == 'schema_info') continue;
-		  if (!file_exists(FIXTURES_PATH .DS. $t . '.yml'))
-			{
+		foreach ($tables as $t) {
+		    $data = "#\n# Fixture YAML file\n#\n#\n# Example:-\n# -\n#  first_name: Bob\n#  last_name: Bones\n#  created: NOW\n#\n";
+			if ($t == 'schema_migrations' || (isset($table) && !in_array($t, $table))) continue;
+		    if (isset($this->params['force']) || !file_exists(FIXTURES_PATH .DS. $t . '.yml')) {
+				if (isset($this->args[1]) && !empty($this->args[1]) && $this->args[1] == 'fromdb') {
+				    $this->out("Generating and populating fixture file for '".$t."' table ...", false);
+			    } else {
+			        $this->out("Generating fixture file for '".$t."' table ...", false);
+			    }
 				$file = new File(FIXTURES_PATH .DS. $t . '.yml', true);
+        	    if (isset($this->args[1]) && !empty($this->args[1]) && $this->args[1] == 'fromdb') {
+        	       $data = $this->_fromDB($t);
+        	    }
 				$file->write($data);
-				$this->out("  Generating fixture file for '".$t."' table ... DONE!");
+				if (isset($this->args[1]) && !empty($this->args[1]) && $this->args[1] == 'fromdb') {
+				    $this->out("DONE!");
+			    } else {
+			        $this->out("DONE!");
+			    }
+			} else {
+			    $this->out("Fixture file already exists for '".$t."'. Ignoring...");
 			}
 		}
-		if (!isset($file))
-		{
-  		$this->out("  All fixtures generated.");
-  		$this->out('');
-  		$this->hr();
-		}
-		else
-		{
-  		$this->out('');
-  		$this->hr();
-	  }
+		$this->out('');
+		if (!isset($file)) {
+      		$this->out("Fixtures generated.");
+      		$this->out('');
+      		$this->hr();
+		} else {
+      		$this->hr();
+	    }
 	}
 	
 	/**
@@ -114,6 +127,17 @@ class FixturesShell extends Shell
 	function g()
 	{
 	  $this->generate();
+	}
+	
+	function _fromDb($table)
+	{
+	    $data = $this->db->find("SELECT * FROM $table");
+	    debug($data);exit;
+		if (function_exists('syck_dump')) {
+			return @syck_dump($data);
+		} else {
+			return Spyc::YAMLDump($data);
+		}
 	}
 	
 	function fixtures()
@@ -147,7 +171,12 @@ class FixturesShell extends Shell
 	function startFixture($name)
 	{
 		$file = FIXTURES_PATH .DS. $name .'.yml';
-		$data = Spyc::YAMLLoad($this->_parsePhp($file));
+        if (function_exists('syck_dump')) {
+            $data = syck_dump($this->_parsePhp($file));
+        } else {
+            App::import('Vendors', 'Spyc');
+            $data = Spyc::YAMLDump($this->_parsePhp($file));
+        }
 		
 		if (!is_array($data) || count($data) === 0)
 		{

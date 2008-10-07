@@ -472,6 +472,7 @@ class MigrateShell extends Shell
      */
     function _getTables()
     {
+        App::import('model'.DS.'connection_manager');
         $db =& ConnectionManager::getDataSource($this->dataSource);
         $usePrefix = empty($db->config['prefix']) ? '' : $db->config['prefix'];
         if ($usePrefix) {
