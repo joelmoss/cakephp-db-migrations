@@ -1,5 +1,8 @@
 ==== Migrate.php Changelog (started as of v3.0) ====
 
+v 4.0 - Oct 7, 2008
+ [*] errr... lots of fixes ;)
+
 v 4.0 RC1 - May 25, 2008
  [*] Fixed bug with old style version numbers
  [*] Fixed bug where fkeys were trying to be created with auto_increment
