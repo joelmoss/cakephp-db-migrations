@@ -1432,7 +1432,7 @@ class MigrateShell extends Shell
         $this->out('    - Generates a migration file that will create a table with the given');
         $this->out('      underscored table_name.');
         $this->out('');
-        $this->out('  cake migrate from_schema');
+        $this->out('  cake migrate full_schema');
         $this->out('    - Runs and migrates the full_schema.yml migration file if it exists.');
         $this->out('');
         $this->out('  cake migrate reset');
