@@ -30,7 +30,6 @@ class FixturesShell extends Shell
 		define('FIXTURES_PATH', APP_PATH .'config' .DS. 'fixtures');
 		if (!$this->_loadDbConfig()) exit;
 		$this->db =& ConnectionManager::getDataSource($this->dataSource);
-		App::import();
     
     $this->welcome();
 		$this->out('App : '. APP_DIR);
@@ -174,7 +173,7 @@ class FixturesShell extends Shell
         if (function_exists('syck_dump')) {
             $data = syck_dump($this->_parsePhp($file));
         } else {
-            App::import('Vendors', 'Spyc');
+            App::import('Vendor', 'Spyc');
             $data = Spyc::YAMLDump($this->_parsePhp($file));
         }
 		
