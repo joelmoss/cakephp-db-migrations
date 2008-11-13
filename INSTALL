@@ -1,7 +1,6 @@
 ==== INSTALLATION ====
 
-1.  Simply copy the 'vendors' directory found in this package in your Cake root or your Cake app
-    root.
+1.  Simply copy this directory into your application's plugins directory.
     
 2.  You will need to ensure that Pear (http://pear.php.net) is installed on the machine that you
     are developing on, and that you have installed the MDB2 (http://pear.php.net/package/MDB2)

@@ -1,5 +1,7 @@
 ### CAKEPHP DATABASE MIGRATIONS
 
+**NOTE** To download the latest stable release, you should use the latest tag: [http://github.com/joelmoss/cakephp-db-migrations/downloads/4.0](http://github.com/joelmoss/cakephp-db-migrations/downloads/4.0)
+
 Database Migrations for CakePHP 1.2 is a shell script supported by the CakePHP console, that lets you
 manage your database schema without touching one little bit of SQL. It is based on the Ruby on Rails
 implementation of Migrations, and uses Pear's MDB2 package, so supports all the databases that that
