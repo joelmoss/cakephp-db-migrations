@@ -5,14 +5,15 @@
  *
  * Run 'cake migrate help' for more info and help on using this script.
  *
+ * PHP versions 4 and 5
+ *
  * Licensed under The MIT License
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright       Copyright 2006-2008, Joel Moss
- * @link                http://developingwithstyle.com
- * @since             CakePHP(tm) v 1.2
- * @license         http://www.opensource.org/licenses/mit-license.php The MIT License
- * 
+ * @copyright		Copyright 2008, Joel Moss
+ * @link            http://developwithstyle.com
+ * @since			CakePHP(tm) v 1.2
+ * @license			http://www.opensource.org/licenses/mit-license.php The MIT License
 */
 
 App::import('Core', array('file', 'folder'));
@@ -131,9 +132,9 @@ class MigrateShell extends Shell
         $this->out('');
         $this->out('Current schema version:', false);
         if ($this->current_migration['id'] == 0) {
-            $this->out('[none yet run]');
+            $this->out($this->_colorize('[none yet run]', 'COMMENT'));
         } else {
-            $this->out('#' . $this->current_migration['id'] . ' "' . $this->current_migration['name'] . '"');
+            $this->out($this->_colorize('#' . $this->current_migration['id'] . ' "', 'COMMENT') . $this->current_migration['name'] . '"');
         }
         $this->out('');
     }
@@ -150,10 +151,10 @@ class MigrateShell extends Shell
         $this->out('Your Migrations (' . count($this->migrations) . ') ...    (* denotes migration not yet run)');
         $this->out('');
         foreach ($this->migrations as $id => $migration) {
-            (!$migration['migrated']) ? $this->out('*', false) : $this->out(' ', false);
+            (!$migration['migrated']) ? $this->out($this->_colorize('*', 'INFO'), false) : $this->out(' ', false);
             $this->out('[' . $id . '] ' . $migration['name'], false);
             if ($migration['migrated_on']) {
-                $this->out('(migrated: ' . date("r", $migration['migrated_on']) . ')');
+                $this->out($this->_colorize('(migrated: ' . date("r", $migration['migrated_on']) . ')', 'COMMENT'));
             } else {
                 $this->out('');
             }
@@ -572,7 +573,7 @@ class MigrateShell extends Shell
         $this->hr();
         if (count($this->migrations) === 0) {
             $this->out('');
-            $this->out('  ** No migrations found **');
+            $this->out($this->_colorize('  ** No migrations found **', 'COMMENT'));
             $this->out('');
             $this->hr();
             $this->out('');
@@ -583,7 +584,7 @@ class MigrateShell extends Shell
 
             if ($target_direction == 'up' && $this->target_migration['migrated'] || $target_direction == 'down' && !$this->target_migration['migrated']) {
                 $this->out('');
-                $this->out('  ** Migrations are up to date **');
+                $this->out($this->_colorize('  ** Migrations are up to date **', 'COMMENT'));
                 $this->out('');
                 $this->hr();
                 $this->out('');
@@ -618,15 +619,13 @@ class MigrateShell extends Shell
                 }
                 return;
             } else {
-                $this->out("  ERROR: $res");
-                $this->hr();
-                return;
+                $this->err("  ERROR: $res");
             }
         }
 
         if (!count($this->unmigrated_migrations) && $this->current_migration['id'] == $this->target_migration['id']) {
             $this->out('');
-            $this->out('  ** Migrations are up to date **');
+            $this->out($this->_colorize('  ** Migrations are up to date **', 'COMMENT'));
             $this->out('');
             $this->hr();
             $this->out('');
@@ -649,7 +648,7 @@ class MigrateShell extends Shell
                 if ($migration['id'] == $this->target_migration['id']) break;
             }
 
-            $this->out("  [{$migration['id']}] {$migration['name']} ...");
+            $this->out('  [' . $this->_colorize($migration['id'], 'COMMENT') . "] {$migration['name']} ...");
 
             $res = $this->_startMigration($migration['id'], $direction);
             if ($res == 1) {
@@ -673,9 +672,7 @@ class MigrateShell extends Shell
                     }
                 }
             } else {
-                $this->out("  ERROR: $res");
-                $this->hr();
-                return;
+                $this->err("  ERROR: $res");
             }
         }
     }
@@ -1362,15 +1359,26 @@ class MigrateShell extends Shell
         }
     }
     
+	function err($str)
+	{
+		$this->out('');
+		$this->out($this->_colorize('  ** '.$str.' **', 'ERROR'));
+		$this->out('');
+		$this->hr();
+		$this->out('');
+		exit;
+	}
+	
   /**
    * Modifies the out method for prettier formatting
    *
    * @param string $string String to output.
    * @param boolean $newline If true, the outputs gets an added newline.
    */
-    function out($string, $newline = true) {
-        return parent::out("  ".$string, $newline);
-    }
+	function out($string = '', $newline = true)
+	{
+        return parent::out(' ' . $string, $newline);
+	}
     
     /**
     * Converts migration number to a minimum three digit number.
@@ -1406,7 +1414,7 @@ class MigrateShell extends Shell
         $this->out('');
         $this->hr();
         $this->out('');
-        $this->out('COMMAND LINE OPTIONS');
+        $this->out($this->_colorize('COMMANDS', 'UNDERSCORE'));
         $this->out('');
         $this->out('  cake migrate');
         $this->out('    - Migrates to the latest version (the last migration file)');
@@ -1471,10 +1479,50 @@ class MigrateShell extends Shell
     function _welcome()
     {
         $this->out('');
-        $this->out(' __  __  _  _  __     ___     __   __   __  ___    __  _  _  __ ');
-        $this->out('|   |__| |_/  |__    | | | | | _  |__| |__|  |  | |  | |\ | |__ ');
-        $this->out('|__ |  | | \_ |__    | | | | |__| | \_ |  |  |  | |__| | \|  __|');
+        $this->out($this->_colorize(' __  __  _  _  __     ___     __   __   __  ___    __  _  _  __ ', 'INFO'));
+        $this->out($this->_colorize('|   |__| |_/  |__    | | | | | _  |__| |__|  |  | |  | |\ | |__ ', 'INFO'));
+        $this->out($this->_colorize('|__ |  | | \_ |__    | | | | |__| | \_ |  |  |  | |__| | \|  __|', 'INFO'));
         $this->out('');
+    }
+  
+    var $styles = array(
+      'ERROR'    => array('bg' => 'red', 'fg' => 'white', 'bold' => true),
+      'INFO'     => array('fg' => 'green', 'bold' => true),
+      'COMMENT'  => array('fg' => 'yellow'),
+      'QUESTION' => array('bg' => 'cyan', 'fg' => 'black', 'bold' => false),
+      'BOLD'     => array('fg' => 'white', 'bold' => true),
+      'UNDERSCORE'     => array('fg' => 'white', 'underscore' => true)
+    );
+    var $options    = array('bold' => 1, 'underscore' => 4, 'blink' => 5, 'reverse' => 7, 'conceal' => 8);
+    var $foreground = array('black' => 30, 'red' => 31, 'green' => 32, 'yellow' => 33, 'blue' => 34, 'magenta' => 35, 'cyan' => 36, 'white' => 37);
+    var $background = array('black' => 40, 'red' => 41, 'green' => 42, 'yellow' => 43, 'blue' => 44, 'magenta' => 45, 'cyan' => 46, 'white' => 47);
+    
+	function _colorize($text = '', $style = null)
+	{
+        if (!$this->_supportsColors() || is_null($style)) {
+            return $text;
+        }
+        
+        $parameters = $this->styles[$style];
+        $codes = array();
+        if (isset($parameters['fg'])) {
+            $codes[] = $this->foreground[$parameters['fg']];
+        }
+        if (isset($parameters['bg'])) {
+            $codes[] = $this->background[$parameters['bg']];
+        }
+        foreach ($this->options as $option => $value) {
+            if (isset($parameters[$option]) && $parameters[$option]) {
+                $codes[] = $value;
+            }
+        }
+
+        return "\033[".implode(';', $codes).'m'.$text."\033[0m";
+	}
+	
+    function _supportsColors()
+    {
+        return DS != '\\' && function_exists('posix_isatty') && @posix_isatty(STDOUT);
     }
   
 }
