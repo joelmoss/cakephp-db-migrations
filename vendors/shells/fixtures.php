@@ -124,15 +124,16 @@ class FixturesShell extends Shell
 
 		$count = 0;
 		$created = array();
-        foreach (Set::extract($data, '{n}.' . $name) as $ri => $r) {
+        foreach ($data as $ri => $r) {
             $records = array();
             foreach ($r as $fi => $f) {
                 if (preg_match("/_id$/", $fi) && !is_id($f) && isset($created[$f])) {
                     $records[$fi] = $created[$f]['id'];
-                } elseif (preg_match("/^\.([A-Z_]+)$/", $f, $matches)) {
+                } elseif (preg_match("/^\.([A-Z_]+)(\((.+)\))?$/", $f, $matches)) {
                     $helper = Inflector::variable(strtolower($matches[1]));
                     if (!method_exists($this->helpers, $helper)) $this->err("Found Helper '$f' in fixture '$name.yml', but Helper method '$helper()' does not exist.");
-                    $records[$fi] = $this->helpers->$helper();
+                    $args = count($matches) == 4 ? explode(',', $matches[3]) : array();
+                    $records[$fi] = call_user_func_array(array($this->helpers, $helper), $args);
                 } else {
                     $records[$fi] = $f;
                 }

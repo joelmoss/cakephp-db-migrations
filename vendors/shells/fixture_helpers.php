@@ -6,20 +6,25 @@
 class FixtureHelpers
 {
   
-  public function now()
-  {
-    return date('Y-m-d H:i:s');
-  }
-  
-  public function lastMonth()
-  {
-    return date('Y-m-d H:i:s', mktime(date('G'), date('i'), date('s'), date('n')-1, date('j'), date('Y')));
-  }
-  
-  function uuid()
-  {
-    return String::uuid();
-  }
+    public function now()
+    {
+        return date('Y-m-d H:i:s');
+    }
+
+    public function lastMonth()
+    {
+        return date('Y-m-d H:i:s', mktime(date('G'), date('i'), date('s'), date('n')-1, date('j'), date('Y')));
+    }
+
+    function uuid()
+    {
+        return String::uuid();
+    }
+    
+    function currency($min = 1, $max = 9)
+    {
+        return mt_rand($min, $max) . '.' . number_format(mt_rand(1, 99), 2);
+    }
   
 	public function lorem()
 	{
