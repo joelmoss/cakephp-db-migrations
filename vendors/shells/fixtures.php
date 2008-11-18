@@ -21,6 +21,7 @@ class FixturesShell extends Shell
 {
     var $dataSource = 'default';
     var $db;
+    var $user_defined = false;
     
     /**
      * Array of database tables
@@ -49,7 +50,7 @@ class FixturesShell extends Shell
 		    $this->hr();
 		    $this->out();
 		    exit;
-		}
+		}        
     }
 
 	function main()
@@ -67,32 +68,58 @@ class FixturesShell extends Shell
 		    exit;
 	    }
 		
-	    if ($fixtures == '*') {
-	        $fixtures = $this->tables;
-	    }
-
 		require 'fixture_helpers.php';
 		$this->helpers = new FixtureHelpers();
 		
-		$fixtures = (array)$fixtures;
-        foreach ($fixtures as $t) {
-            if ($t == 'schema_migrations' || $t == Configure::read('Session.table')) continue;
+	    if ($fixtures == '*') {
+	        $fixtures = $this->tables;
+	    } else {
+	        $this->user_defined = true;
+	    }
+		
+        foreach ((array)$fixtures as $name) {
+            if ($name == 'schema_migrations' || $name == Configure::read('Session.table')) continue;
             
-            if (!in_array($t, $this->tables)) {
-                if (!isset($this->params['verbose']) && !isset($this->params['v'])) continue;
-                
-                $this->out("Running fixtures for '".$t."' ...", false);
-                $this->out($this->_colorize("FAIL", 'ERROR') . $this->_colorize(" table $t does not exist", 'COMMENT'));
-            } else {
-                if (!file_exists(FIXTURES_PATH .DS. $t .'.yml')) {
-                    if (!isset($this->params['verbose']) && !isset($this->params['v'])) continue;
-                    
-                    $this->out("Running fixtures for '".$t."' ...", false);
-                    $this->out($this->_colorize("FAIL", 'ERROR') . $this->_colorize(" $t.yml does not exist", 'COMMENT'));
-                } else {
-                    $this->_startFixture($t);
-                }
+            if (!in_array($name, $this->tables)) {
+                if (!$this->user_defined && !isset($this->params['verbose']) && !isset($this->params['v'])) continue;
+            
+                $this->out("Running fixtures for '" . $name . "' ...", false);
+                $this->out($this->_colorize("FAIL", 'ERROR') . $this->_colorize(" table $name does not exist", 'COMMENT'));
+                continue;
             }
+            
+            if (!file_exists(FIXTURES_PATH .DS. $name .'.yml')) {
+                if (!$this->user_defined && !isset($this->params['verbose']) && !isset($this->params['v'])) continue;
+            
+                $this->out("Running fixtures for '".$name."' ...", false);
+                $this->out($this->_colorize("FAIL", 'ERROR') . $this->_colorize(" $name.yml does not exist", 'COMMENT'));
+                continue;
+            }
+	    
+    		$file = FIXTURES_PATH .DS. $name .'.yml';
+            if (function_exists('syck_dump')) {
+                $data = syck_load($this->_parsePhp($file));
+            } else {
+                App::import('Vendor', 'Spyc');
+                $data = Spyc::YAMLLoad($this->_parsePhp($file));
+            }
+		
+    		if (!is_array($data) || !count($data)) {
+    		    if (!$this->user_defined && !isset($this->params['verbose']) && !isset($this->params['v'])) continue;
+		    
+    		    $this->out("Running fixtures for '" . $name . "' ...", false);
+    		    $this->out($this->_colorize("FAIL", 'ERROR') . $this->_colorize(" unable to parse YAML", 'COMMENT'));
+    		    continue;
+    	    }
+    	    
+            $this->data[$name] = $this->_startFixture($name, $data);
+        }
+        
+        foreach ($this->data as $name => $records) {
+            $this->db->truncate($name);
+            $this->out("Running fixtures for '" . $name . "' ...", false);
+            $res = $this->{$this->modelNames[$name]}->saveAll($records, array('validate' => false));
+            $this->out($this->_colorize(count($records) . ' rows inserted.', 'COMMENT'));
         }
         
 		$this->out();
@@ -100,42 +127,59 @@ class FixturesShell extends Shell
 		$this->out();
 	}
 
-	function _startFixture($name)
+	function _startFixture($name, $data)
 	{
-		$file = FIXTURES_PATH .DS. $name .'.yml';
-        if (function_exists('syck_dump')) {
-            $data = syck_load($this->_parsePhp($file));
-        } else {
-            App::import('Vendor', 'Spyc');
-            $data = Spyc::YAMLLoad($this->_parsePhp($file));
-        }
-		
-		if (!is_array($data) || !count($data)) {
-		    if (!isset($this->params['verbose']) && !isset($this->params['v'])) return;
-		    $this->out("Running fixtures for '".$name."' ...", false);
-		    $this->out($this->_colorize("FAIL", 'ERROR') . $this->_colorize(" unable to parse YAML", 'COMMENT'));
-		    return;
+	    $this->_loadModel($name);
+	    $model = $this->{$this->modelNames[$name]};
+	    
+	    if (in_array('Tree', $model->actsAs)) {
+	        $model->Behaviors->detach('Tree');
 	    }
 	    
-	    $this->out("Running fixtures for '".$name."' ...", false);
-
-		$model = new Model(false, $name);
-		$this->db->truncate($model);
-
-		$count = 0;
-		$created = array();
+        foreach ($data as $key => $value) {
+            if (preg_match("/^repeat-([0-9]+)$/", $key, $matches)) {
+                for ($i=1; $i <= $matches[1]; $i++) { 
+                    $data[] = $value;
+                }
+                unset($data[$key]);
+                continue;
+            }
+        }
+        
+        $id = 0;
+        $created = array();
         foreach ($data as $ri => $r) {
+            $id++;
             $records = array();
-            foreach ($r as $fi => $f) {
-                if (preg_match("/_id$/", $fi) && !is_id($f) && isset($created[$f])) {
-                    $records[$fi] = $created[$f]['id'];
-                } elseif (preg_match("/^\.([A-Z_]+)(\((.+)\))?$/", $f, $matches)) {
-                    $helper = Inflector::variable(strtolower($matches[1]));
-                    if (!method_exists($this->helpers, $helper)) $this->err("Found Helper '$f' in fixture '$name.yml', but Helper method '$helper()' does not exist.");
-                    $args = count($matches) == 4 ? explode(',', $matches[3]) : array();
-                    $records[$fi] = call_user_func_array(array($this->helpers, $helper), $args);
+
+            if (!array_key_exists('id', $r)) {
+                $schema = $model->schema('id');
+                if ($schema && $schema['type'] == 'string' && $schema['length'] == 36) {
+                    $records['id'] = String::uuid();
                 } else {
-                    $records[$fi] = $f;
+                    $records['id'] = $id;
+                }
+            }
+
+            foreach ($r as $fi => $f) {
+                $class = Inflector::classify($fi);
+                if ($model->schema($fi)) {
+                    $records[$fi] = $this->_formatColumn($fi, $f);
+                } elseif ($model->{$class}) {
+                    if (Set::countDim($f) > 1) {
+                        foreach ($f as $i => $v) {
+                            $f[$i][$model->hasMany[$class]['foreignKey']] = $records['id'];
+                        }
+                    } else {
+                        $f[$model->hasMany[$class]['foreignKey']] = $records['id'];
+                        $f = array($f);
+                    }
+
+                    $fi = Inflector::pluralize($fi);
+                    foreach ($this->_startFixture($fi, $f) as $i => $v) {
+                        unset($v['id']);
+                        $this->data[$fi][] = $v;
+                    }
                 }
             }
 
@@ -143,22 +187,42 @@ class FixturesShell extends Shell
                 $records['created'] = date('Y-m-d H:i:s');
             }
 
-            $use_uuid = false;
-            if (!array_key_exists('id', $r) && isset($model->_schema['id']) && $model->_schema['id']['type'] == 'string' && $model->_schema['id']['length'] == 36) {
-                $records['id'] = String::uuid();
-                $use_uuid = true;
-            }
-
-            $res = $this->db->create($model, array_keys($records), array_values($records));
-            if ($res) {
-                $records['id'] = $use_uuid ? $records['id'] : $model->id;
-                $created[$ri] = $records;
-            }
-            $count++;
+            $created[$ri] = $records;
         }
         
-		$this->out($this->_colorize("$count rows inserted.", 'COMMENT'));
+        return $created;
 	}
+	
+	function _formatColumn($name, $value)
+	{
+        // if (preg_match("/_id$/", $name) && !is_id($value) && isset($created[$value])) {
+        //     $records[$fi] = $created[$f]['id'];
+        // } else
+        if (preg_match("/^\.([A-Z_]+)(\((.+)\))?$/", $value, $matches)) {
+            $helper = Inflector::variable(strtolower($matches[1]));
+            if (!method_exists($this->helpers, $helper)) $this->err("Found Helper '$value' in fixture, but Helper method '$helper()' does not exist.");
+            $args = count($matches) == 4 ? explode(',', $matches[3]) : array();
+            return call_user_func_array(array($this->helpers, $helper), $args);
+        } else {
+            return $value;
+        }
+	}
+	
+    function _loadModel($name)
+    {
+        $model_name = Inflector::classify($name);
+		$this->modelNames[$name] = $model_name;
+
+		if (App::import('Model', $model_name)) {
+		    if (!PHP5) {
+		        $this->{$model_name} =& new $model_name();
+	        } else {
+	            $this->{$model_name} = new $model_name();
+	        }
+		} else {
+		    $this->out($this->_colorize("FAIL", 'ERROR') . $this->_colorize(" unable to load model '$model_name'", 'COMMENT'));
+		}
+    }
 	
 /**
  * Generates a fixture file for each database table.
