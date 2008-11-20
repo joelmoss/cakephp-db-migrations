@@ -244,6 +244,8 @@ class FixturesShell extends Shell
  */
 	function generate()
 	{
+	    $all_fromdb = false;
+	    
 	    if (!$this->args) {
 	        $fixtures = '*';
 	    } else {
@@ -252,7 +254,10 @@ class FixturesShell extends Shell
 	            $fixtures = '*';
 	        } else {
 	            $fixtures = $this->args;
-	            if ($all_fromdb = (is_array($fixtures) && end($fixtures) == 'fromdb')) array_pop($fixtures);
+	            if (end($fixtures) == 'fromdb') {
+	                array_pop($fixtures);
+	                $all_fromdb = true;
+                }
 	        }
 	    }
 		
