@@ -116,6 +116,16 @@ class FixturesShell extends Shell
         }
         
         foreach ($this->data as $name => $records) {
+            foreach ($records as $i => $record) {
+                foreach ($record as $key => $val) {
+                    if ($val == '.RANDOM') {
+                        $this->data[$name][$i][$key] = $this->data['categories'][array_rand($this->data['categories'])]['id'];
+                    }
+                }
+            }
+        }
+        
+        foreach ($this->data as $name => $records) {            
             $this->db->truncate($name);
             $this->out("Running fixtures for '" . $name . "' ...", false);
             $res = $this->{$this->modelNames[$name]}->saveAll($records, array('validate' => false));
@@ -166,19 +176,23 @@ class FixturesShell extends Shell
                 if ($model->schema($fi)) {
                     $records[$fi] = $this->_formatColumn($fi, $f);
                 } elseif ($model->{$class}) {
-                    if (Set::countDim($f) > 1) {
-                        foreach ($f as $i => $v) {
-                            $f[$i][$model->hasMany[$class]['foreignKey']] = $records['id'];
+                    if (is_array($f)) {
+                        if (Set::countDim($f) > 1) {
+                            foreach ($f as $i => $v) {
+                                $f[$i][$model->hasMany[$class]['foreignKey']] = $records['id'];
+                            }
+                        } else {
+                            $f[$model->hasMany[$class]['foreignKey']] = $records['id'];
+                            $f = array($f);
                         }
-                    } else {
-                        $f[$model->hasMany[$class]['foreignKey']] = $records['id'];
-                        $f = array($f);
-                    }
 
-                    $fi = Inflector::pluralize($fi);
-                    foreach ($this->_startFixture($fi, $f) as $i => $v) {
-                        unset($v['id']);
-                        $this->data[$fi][] = $v;
+                        $fi = Inflector::pluralize($fi);
+                        foreach ($this->_startFixture($fi, $f) as $i => $v) {
+                            unset($v['id']);
+                            $this->data[$fi][] = $v;
+                        }
+                    } elseif ($f == '.RANDOM') {
+                        $records[$fi . '_id'] = '.RANDOM';
                     }
                 }
             }
@@ -265,7 +279,7 @@ class FixturesShell extends Shell
 			    continue;
 			}
 			
-		    if (isset($this->params['force']) || !file_exists(FIXTURES_PATH .DS. $t . '.yml')) {
+		    if (isset($this->params['force']) || isset($this->params['force']) || !file_exists(FIXTURES_PATH .DS. $t . '.yml')) {
         	    if ($all_fromdb || $_option == 'fromdb') {
         	       $data = $this->_fromDB($t);
         	    }

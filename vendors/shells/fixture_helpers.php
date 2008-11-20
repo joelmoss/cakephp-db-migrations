@@ -132,9 +132,9 @@ class FixtureHelpers
 	public function paragraphs( $paragraph_count = 3)
 	{
 		for ($i=0; $i < $paragraph_count; $i++) { 
-			$p[] = $this->paragraph;
+			$p[] = $this->paragraph();
 		}
-		return $p;
+		return '<p>' . join('</p><p>', $p) . '</p>';
 	}
   
 	public function lorem()
