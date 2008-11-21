@@ -115,21 +115,31 @@ class MigrateShell extends Shell
         'notnull' => true,
         'autoincrement'  => true
     );
+    
+    /**
+     * True is shell is used as part of a plugin
+     */
+    var $_is_plugin = false;
 
     function startup()
     {
         define('MIGRATIONS_PATH', APP_PATH .'config' .DS. 'migrations');
     
+        if (preg_match("/\/plugins\/migrations\/vendors\/shells\/migrate\.php$/", $this->Dispatch->shellPath)) {
+            $this->_is_plugin = true;
+        }
+    
         if (isset($this->params['ds'])) $this->dataSource = $this->params['ds'];
         if (isset($this->params['datasource'])) $this->dataSource = $this->params['datasource'];
-    
-        $this->_initDatabase();
-        $this->_getMigrations();
     
         $this->_welcome();
         $this->out('App : '. APP_DIR);
         $this->out('Path: '. ROOT . DS . APP_DIR);        
         $this->out('');
+    
+        $this->_initDatabase();
+        $this->_getMigrations();
+
         $this->out('Current schema version:', false);
         if ($this->current_migration['id'] == 0) {
             $this->out($this->_colorize('[none yet run]', 'COMMENT'));
@@ -390,7 +400,7 @@ class MigrateShell extends Shell
         if (function_exists('syck_dump')) {
             return syck_dump($dbShema);
         } else {
-            App::import('Vendor', 'Spyc');
+            $this->_loadVendor('Spyc');
             return Spyc::YAMLDump($dbShema);
         }
     }
@@ -685,7 +695,7 @@ class MigrateShell extends Shell
             if (function_exists('syck_load')) {
                 $array = syck_load($yml);
             } else {
-                App::import('Vendor', 'Spyc');
+                $this->_loadVendor('Spyc');
                 $array = Spyc::YAMLLoad($yml);
             }
             if (!is_array($array)) return "Unable to parse YAML Migration file";
@@ -1265,10 +1275,26 @@ class MigrateShell extends Shell
         }
     }
 
+    function _loadVendor($class)
+    {
+        $params = array('file' => $class . '.php');
+        if ($this->_is_plugin) {
+            if (!App::import('vendor', 'migrations.' . $class, $params)) {
+                if (!App::import('vendor', $class, $params)) {
+                    $this->err('Unable to load ' . $class . '.');
+                }
+            }
+        } else {
+            if (!App::import('vendor', $class, $params)) {
+                $this->err('Unable to load ' . $class . '.');
+            }
+        }
+    }
+
     function _initDatabase()
     {
-        if (!@include_once('MDB2.php')) $this->error('PEAR NOT FOUND', "Unable to include PEAR.php and MDB2.php\n");
-
+        if (!@include_once('MDB2.php')) $this->err("Unable to include PEAR.php and MDB2.php\n");
+        
         if (!$this->_loadDbConfig()) exit;
 
         $config = $this->DbConfig->{$this->dataSource};
