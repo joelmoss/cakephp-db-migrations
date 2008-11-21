@@ -901,6 +901,7 @@ class MigrateShell extends Shell
                         }
 
                         $r = $this->_db->createTable($table, $rfields, array_merge(array('primary' => $pk), $table_props));
+                        $this->_printQuery();
                         if (PEAR::isError($r)) $this->err($r->getUserInfo());
                     
                         if (count($indexes) > 0) {
@@ -908,6 +909,7 @@ class MigrateShell extends Shell
                                 $r = $this->_db->createIndex($table, $field, array(
                                     'fields' => array($field=>array())
                                 ));
+                                $this->_printQuery();
                                 if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                             }
                         }
@@ -917,6 +919,7 @@ class MigrateShell extends Shell
                                     'unique' => true,
                                     'fields' => array($field => array())
                                 ));
+                                $this->_printQuery();
                                 if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                             }
                         }
@@ -931,6 +934,7 @@ class MigrateShell extends Shell
                             }
                             $this->out("      > dropping table '$table'");
                             $r = $this->_db->dropTable($table);
+                            $this->_printQuery();
                             if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                         }
                     } else {
@@ -939,6 +943,7 @@ class MigrateShell extends Shell
                         }
                         $this->out("      > dropping table '$action'");
                         $r = $this->_db->dropTable($action);
+                        $this->_printQuery();
                         if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                     }
                     break;
@@ -1007,6 +1012,7 @@ class MigrateShell extends Shell
                         if (isset($fields['fkeys'])) foreach($fields['fkeys'] as $key) $rfields[$key.'_id'] = $this->use_uuid ? $this->uuid_format : $this->id_format;
 
                         $r = $this->_db->alterTable($table, array('add'=>$rfields), false);
+                        $this->_printQuery();
                         if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                     
                         if ($pk) {
@@ -1014,6 +1020,7 @@ class MigrateShell extends Shell
                                 'primary' => true,
                                 'fields' => array($pk => array())
                             ));
+                            $this->_printQuery();
                             if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                         }
                     
@@ -1022,6 +1029,7 @@ class MigrateShell extends Shell
                                 $r = $this->_db->createIndex($table, $field, array(
                                     'fields' => array($field => array())
                                 ));
+                                $this->_printQuery();
                                 if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                             }
                         }
@@ -1032,6 +1040,7 @@ class MigrateShell extends Shell
                                     'unique' => true,
                                     'fields' => array($field => array())
                                 ));
+                                $this->_printQuery();
                                 if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                             }
                         }
@@ -1052,10 +1061,12 @@ class MigrateShell extends Shell
                                 $rfields[$field] = array();
                             }
                             $r = $this->_db->alterTable($table, array('remove'=>$rfields), false);
+                            $this->_printQuery();
                             if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                         } else {
                             $this->out("      > dropping column '$fields' on '$table'");
                             $r = $this->_db->alterTable($table, array('remove'=>array($fields=>array())), false);
+                            $this->_printQuery();
                             if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                         }
                     }
@@ -1069,6 +1080,7 @@ class MigrateShell extends Shell
                         }
                         $this->out("      > renaming table '$current_name' to '$new_name'");
                         $r = $this->_db->alterTable($current_name, array('name'=>$new_name), false);
+                        $this->_printQuery();
                         if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                     }
                     break;
@@ -1084,6 +1096,7 @@ class MigrateShell extends Shell
                             $this->out("      > renaming column '$field' to '$new_name' on '$table'");
 
                             $r = $this->_db->getTableFieldDefinition($table, $field);
+                            $this->_printQuery();
                             if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                         
                             $change = array(
@@ -1094,6 +1107,7 @@ class MigrateShell extends Shell
                             );
                       
                             $r = $this->_db->alterTable($table, array('rename'=>$change), false);
+                            $this->_printQuery();
                             if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                         }
                     }
@@ -1156,11 +1170,13 @@ class MigrateShell extends Shell
                         }
                     
                         $r = $this->_db->alterTable($table, array('change'=>$change), false);
+                        $this->_printQuery();
                         if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                     
                         if ($Npks) {
                             foreach ($Npks as $field) {
                                 $r = $this->_db->dropConstraint($table, $Npk, true);
+                                $this->_printQuery();
                                 if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                             }
                         }
@@ -1170,12 +1186,14 @@ class MigrateShell extends Shell
                                 'primary' => true,
                                 'fields' => array($pk => array())
                             ));
+                            $this->_printQuery();
                             if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                         }
                     
                         if (count($Nindexes) > 0) {
                             foreach ($Nindexes as $field) {
                                 $r = $this->_db->dropIndex($table, $field);
+                                $this->_printQuery();
                                 if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                             }
                         }
@@ -1185,6 +1203,7 @@ class MigrateShell extends Shell
                                 $r = $this->_db->createIndex($table, $field, array(
                                     'fields' => array($field=>array())
                                 ));
+                                $this->_printQuery();
                                 if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                             }
                         }
@@ -1192,6 +1211,7 @@ class MigrateShell extends Shell
                         if (count($Nuniques) > 0) {
                             foreach ($Nuniques as $field) {
                                 $r = $this->_db->dropConstraint($table, $field);
+                                $this->_printQuery();
                                 if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                             }
                         }
@@ -1202,6 +1222,7 @@ class MigrateShell extends Shell
                                     'unique' => true,
                                     'fields' => array($field=>array())
                                 ));
+                                $this->_printQuery();
                                 if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                             }
                         }
@@ -1213,17 +1234,26 @@ class MigrateShell extends Shell
                         foreach ($action as $sql) {
                             $this->out("      > running SQL");
                             $r = $this->_db->query($sql);
+                            $this->_printQuery();
                             if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                         }
                     } else {
                         $this->out("      > running SQL");
                         $r = $this->_db->query($action);
+                        $this->_printQuery();
                         if (PEAR::isError($r)) $this->err($r->getDebugInfo());
                     }
                     break;
             }
         }
         return 1;
+    }
+
+    function _printQuery()
+    {
+        if (isset($this->params['v'])) {
+            $this->out('      ' . $this->_colorize('>> query: "' . $this->_db->last_query . '"', 'INFO_'));
+        }
     }
 
     function _sortMigrations($dir = 'up')
@@ -1460,8 +1490,13 @@ class MigrateShell extends Shell
         $this->out($this->_colorize('  cake migrate help', 'COMMENT'));
         $this->out('      Displays this Help');
         $this->out('');
-        $this->out("    append '-ds [data source]' to the command if you want to specify the");
-        $this->out('    datasource to use from database.php');
+        $this->out($this->_colorize('COMMANDS', 'UNDERSCORE'));
+        $this->out();
+        $this->out($this->_colorize('  -ds [data_source]', 'COMMENT'));
+        $this->out("      The datasource to use from database.php (default is 'default')");
+        $this->out();
+        $this->out($this->_colorize('  -v|verbose', 'COMMENT'));
+        $this->out("      Will print out more info including the actual SQL queries.");
         $this->out('');
         $this->out('');
         $this->out('For more information and for the latest release of this and others,');
@@ -1488,6 +1523,7 @@ class MigrateShell extends Shell
     var $styles = array(
       'ERROR'    => array('bg' => 'red', 'fg' => 'white', 'bold' => true),
       'INFO'     => array('fg' => 'green', 'bold' => true),
+      'INFO_'    => array('fg' => 'green', 'bold' => false),
       'COMMENT'  => array('fg' => 'yellow'),
       'QUESTION' => array('bg' => 'cyan', 'fg' => 'black', 'bold' => false),
       'BOLD'     => array('fg' => 'white', 'bold' => true),
