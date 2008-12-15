@@ -22,6 +22,7 @@ class FixturesShell extends Shell
     var $dataSource = 'default';
     var $db;
     var $user_defined = false;
+    var $data = array();
     
     /**
      * Array of database tables
@@ -79,7 +80,6 @@ class FixturesShell extends Shell
 		
         foreach ((array)$fixtures as $name) {
             if ($name == 'schema_migrations' || $name == Configure::read('Session.table')) continue;
-            
             if (!in_array($name, $this->tables)) {
                 if (!$this->user_defined && !isset($this->params['verbose']) && !isset($this->params['v'])) continue;
             
@@ -112,7 +112,9 @@ class FixturesShell extends Shell
     		    continue;
     	    }
     	    
-            $this->data[$name] = $this->_startFixture($name, $data);
+    	    if ($data = $this->_startFixture($name, $data)) {
+                $this->data[$name] = $data;
+            }
         }
         
         foreach ($this->data as $name => $records) {
@@ -125,7 +127,7 @@ class FixturesShell extends Shell
             }
         }
         
-        foreach ($this->data as $name => $records) {            
+        foreach ($this->data as $name => $records) {
             $this->db->truncate($name);
             $this->out("Running fixtures for '" . $name . "' ...", false);
             $res = $this->{$this->modelNames[$name]}->saveAll($records, array('validate' => false));
@@ -139,10 +141,10 @@ class FixturesShell extends Shell
 
 	function _startFixture($name, $data)
 	{
-	    $this->_loadModel($name);
+	    if (!$this->_loadModel($name)) return false;
 	    $model = $this->{$this->modelNames[$name]};
 	    
-	    if (in_array('Tree', $model->actsAs)) {
+	    if ($model->actsAs && in_array('Tree', $model->actsAs)) {
 	        $model->Behaviors->detach('Tree');
 	    }
 	    
@@ -209,10 +211,12 @@ class FixturesShell extends Shell
 	
 	function _formatColumn($name, $value)
 	{
+	    if (is_array($value)) {
+	        return $value[array_rand($value)];
         // if (preg_match("/_id$/", $name) && !is_id($value) && isset($created[$value])) {
         //     $records[$fi] = $created[$f]['id'];
         // } else
-        if (preg_match("/^\.([A-Z_]+)(\((.+)\))?$/", $value, $matches)) {
+        } elseif (preg_match("/^\.([A-Z_]+)(\((.+)\))?$/", $value, $matches)) {
             $helper = Inflector::variable(strtolower($matches[1]));
             if (!method_exists($this->helpers, $helper)) $this->err("Found Helper '$value' in fixture, but Helper method '$helper()' does not exist.");
             $args = count($matches) == 4 ? explode(',', $matches[3]) : array();
@@ -234,8 +238,11 @@ class FixturesShell extends Shell
 	            $this->{$model_name} = new $model_name();
 	        }
 		} else {
+		    $this->out("Running fixtures for '" . $name . "' ...", false);
 		    $this->out($this->_colorize("FAIL", 'ERROR') . $this->_colorize(" unable to load model '$model_name'", 'COMMENT'));
+		    return false;
 		}
+		return true;
     }
 	
 /**
