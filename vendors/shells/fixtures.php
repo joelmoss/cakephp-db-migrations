@@ -233,9 +233,9 @@ class FixturesShell extends Shell
 
 		if (App::import('Model', $model_name)) {
 		    if (!PHP5) {
-		        $this->{$model_name} =& new $model_name();
+		        $this->{$model_name} =& new $model_name(false, null, $this->db);
 	        } else {
-	            $this->{$model_name} = new $model_name();
+	            $this->{$model_name} = new $model_name(false, null, $this->db);
 	        }
 		} else {
 		    $this->out("Running fixtures for '" . $name . "' ...", false);
