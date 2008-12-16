@@ -372,9 +372,10 @@ class MigrateShell extends Shell
         if (empty($__tables)) $this->error('', '  There are currently no tables found in the database.');
 
         if (!$allTables) {
+            $id = gmdate("U");
             foreach ($__tables as $__table) {
                 $out = $this->_buildYaml($__table);
-                $this->createFile(MIGRATIONS_PATH .DS. gmdate("U") .'_create_'. $__table. '.yml', $out);
+                $this->createFile(MIGRATIONS_PATH .DS. ($id++) .'_create_'. $__table. '.yml', $out);
             }
         } else {
             $this->createFile(MIGRATIONS_PATH .DS. 'full_schema.yml', $this->_buildYaml($__tables));
