@@ -177,7 +177,7 @@ class FixturesShell extends Shell
                 $class = Inflector::classify($fi);
                 if ($model->schema($fi)) {
                     $records[$fi] = $this->_formatColumn($fi, $f);
-                } elseif ($model->{$class}) {
+                } elseif (isset($model->{$class})) {
                     if (is_array($f)) {
                         if (Set::countDim($f) > 1) {
                             foreach ($f as $i => $v) {
@@ -233,9 +233,9 @@ class FixturesShell extends Shell
 
 		if (App::import('Model', $model_name)) {
 		    if (!PHP5) {
-		        $this->{$model_name} =& new $model_name(false, null, $this->db);
+		        $this->{$model_name} =& new $model_name(false, null, $this->dataSource);
 	        } else {
-	            $this->{$model_name} = new $model_name(false, null, $this->db);
+	            $this->{$model_name} = new $model_name(false, null, $this->dataSource);
 	        }
 		} else {
 		    $this->out("Running fixtures for '" . $name . "' ...", false);
