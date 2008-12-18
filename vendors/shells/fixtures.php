@@ -19,9 +19,24 @@ App::import('Core', array('file', 'folder', 'model', 'connection_manager'));
 
 class FixturesShell extends Shell
 {
+    /**
+     * Default datasource
+     */
     var $dataSource = 'default';
+    
+    /**
+     * Database object
+     */
     var $db;
-    var $user_defined = false;
+    
+    /**
+     * True if user has passed any fixture names as arguments
+     */
+    var $_user_defined = false;
+    
+    /**
+     * Array of fixture data to write into table
+     */
     var $data = array();
     
     /**
@@ -35,7 +50,6 @@ class FixturesShell extends Shell
         if (isset($this->params['datasource'])) $this->dataSource = $this->params['datasource'];
 
         define('FIXTURES_PATH', APP_PATH .'config' .DS. 'fixtures');
-        if (!$this->_loadDbConfig()) exit;
         $this->db =& ConnectionManager::getDataSource($this->dataSource);
 
         $this->welcome();
@@ -75,13 +89,13 @@ class FixturesShell extends Shell
 	    if ($fixtures == '*') {
 	        $fixtures = $this->tables;
 	    } else {
-	        $this->user_defined = true;
+	        $this->_user_defined = true;
 	    }
 		
         foreach ((array)$fixtures as $name) {
             if ($name == 'schema_migrations' || $name == Configure::read('Session.table')) continue;
             if (!in_array($name, $this->tables)) {
-                if (!$this->user_defined && !isset($this->params['verbose']) && !isset($this->params['v'])) continue;
+                if (!$this->_user_defined && !isset($this->params['verbose']) && !isset($this->params['v'])) continue;
             
                 $this->out("Running fixtures for '" . $name . "' ...", false);
                 $this->out($this->_colorize("FAIL", 'ERROR') . $this->_colorize(" table $name does not exist", 'COMMENT'));
@@ -89,7 +103,7 @@ class FixturesShell extends Shell
             }
             
             if (!file_exists(FIXTURES_PATH .DS. $name .'.yml')) {
-                if (!$this->user_defined && !isset($this->params['verbose']) && !isset($this->params['v'])) continue;
+                if (!$this->_user_defined && !isset($this->params['verbose']) && !isset($this->params['v'])) continue;
             
                 $this->out("Running fixtures for '".$name."' ...", false);
                 $this->out($this->_colorize("FAIL", 'ERROR') . $this->_colorize(" $name.yml does not exist", 'COMMENT'));
@@ -105,7 +119,7 @@ class FixturesShell extends Shell
             }
 		
     		if (!is_array($data) || !count($data)) {
-    		    if (!$this->user_defined && !isset($this->params['verbose']) && !isset($this->params['v'])) continue;
+    		    if (!$this->_user_defined && !isset($this->params['verbose']) && !isset($this->params['v'])) continue;
 		    
     		    $this->out("Running fixtures for '" . $name . "' ...", false);
     		    $this->out($this->_colorize("FAIL", 'ERROR') . $this->_colorize(" unable to parse YAML", 'COMMENT'));
@@ -175,9 +189,7 @@ class FixturesShell extends Shell
 
             foreach ($r as $fi => $f) {
                 $class = Inflector::classify($fi);
-                if ($model->schema($fi)) {
-                    $records[$fi] = $this->_formatColumn($fi, $f);
-                } elseif (isset($model->{$class})) {
+                if (isset($model->{$class})) {
                     if (is_array($f)) {
                         if (Set::countDim($f) > 1) {
                             foreach ($f as $i => $v) {
@@ -196,6 +208,8 @@ class FixturesShell extends Shell
                     } elseif ($f == '.RANDOM') {
                         $records[$fi . '_id'] = '.RANDOM';
                     }
+                } else {
+                    $records[$fi] = $this->_formatColumn($fi, $f);
                 }
             }
 
@@ -205,7 +219,6 @@ class FixturesShell extends Shell
 
             $created[$ri] = $records;
         }
-        
         return $created;
 	}
 	
@@ -233,10 +246,11 @@ class FixturesShell extends Shell
 
 		if (App::import('Model', $model_name)) {
 		    if (!PHP5) {
-		        $this->{$model_name} =& new $model_name(false, null, $this->dataSource);
+		        $this->{$model_name} =& new $model_name(false, false, false);
 	        } else {
-	            $this->{$model_name} = new $model_name(false, null, $this->dataSource);
+	            $this->{$model_name} = new $model_name(false, false, false);
 	        }
+	        $this->{$model_name}->setDataSource($this->dataSource);
 		} else {
 		    $this->out("Running fixtures for '" . $name . "' ...", false);
 		    $this->out($this->_colorize("FAIL", 'ERROR') . $this->_colorize(" unable to load model '$model_name'", 'COMMENT'));
