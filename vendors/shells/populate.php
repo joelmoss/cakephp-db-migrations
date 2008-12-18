@@ -1,8 +1,8 @@
 <?php
 /**
- * The FixtureTask runs a specified database fixture.
+ * This shell populates your database tables with data, generated from YAML files.
  *
- * Run 'cake fixtures help' for more info and help on using this script.
+ * Run 'cake populate help' for more info and help on using this script.
  * 
  * PHP versions 4 and 5
  *
@@ -16,8 +16,9 @@
  */
 
 App::import('Core', array('file', 'folder', 'model', 'connection_manager'));
+App::import('Vendor', 'Migrations.Yaml');
 
-class FixturesShell extends Shell
+class PopulateShell extends Shell
 {
     /**
      * Default datasource
@@ -25,9 +26,9 @@ class FixturesShell extends Shell
     var $dataSource = 'default';
     
     /**
-     * Database object
+     * Population Helpers object
      */
-    var $db;
+    var $helpers;
     
     /**
      * True if user has passed any fixture names as arguments
@@ -44,85 +45,102 @@ class FixturesShell extends Shell
      */
     var $tables = array();
 
-    function startup()
+    /**
+     * Console color styles
+     */
+    var $styles = array(
+      'ERROR' => array('bg' => 'red', 'fg' => 'white', 'bold' => true),
+      'INFO' => array('fg' => 'green', 'bold' => true),
+      'COMMENT' => array('fg' => 'yellow'),
+      'QUESTION' => array('bg' => 'cyan', 'fg' => 'black', 'bold' => false),
+      'BOLD' => array('fg' => 'white', 'bold' => true),
+      'UNDERSCORE' => array('fg' => 'white', 'underscore' => true)
+    );
+    var $options = array('bold' => 1, 'underscore' => 4, 'blink' => 5, 'reverse' => 7, 'conceal' => 8);
+    var $foreground = array('black' => 30, 'red' => 31, 'green' => 32, 'yellow' => 33, 'blue' => 34, 'magenta' => 35, 'cyan' => 36, 'white' => 37);
+    var $background = array('black' => 40, 'red' => 41, 'green' => 42, 'yellow' => 43, 'blue' => 44, 'magenta' => 45, 'cyan' => 46, 'white' => 47);
+
+    function initialize()
     {
-        if (isset($this->params['ds'])) $this->dataSource = $this->params['ds'];
-        if (isset($this->params['datasource'])) $this->dataSource = $this->params['datasource'];
-
-        define('FIXTURES_PATH', APP_PATH .'config' .DS. 'fixtures');
-        $this->db =& ConnectionManager::getDataSource($this->dataSource);
-
         $this->welcome();
         $this->out('App:  '. APP_DIR);
         $this->out('Path: '. ROOT . DS . APP_DIR);
         $this->out('');
         $this->hr();
         
-		$this->tables = $this->db->sources();
-		if (!$this->tables) {
-		    $this->out($this->_colorize("Database does not contain any tables.", 'COMMENT'));
-		    $this->out($this->_colorize("Don't forget to run your migrations before your fixtures..\n", 'COMMENT'));
+        if (!$this->_loadModels()) {
+            $this->out();
+		    $this->out($this->_colorize("You have not created any Models. Run ", 'COMMENT') . "'cake bake model'" . $this->_colorize("to create", 'COMMENT'));
+		    $this->out($this->_colorize("your first model, then run this shell again.", 'COMMENT'));
+		    $this->out();
 		    $this->hr();
 		    $this->out();
 		    exit;
-		}        
+        }
+    }
+
+    /**
+     * Starts up the the Shell and defines some basics
+     */
+    function startup()
+    {
+        $this->_renameFixturesDir();
+        
+        if (isset($this->params['ds'])) $this->dataSource = $this->params['ds'];
+        if (isset($this->params['datasource'])) $this->dataSource = $this->params['datasource'];
     }
 
 	function main()
 	{
 	    $this->out();
-	    $fixtures = count($this->args) ? $this->args : '*';
+	    $models = count($this->args) ? $this->args : '*';
 	    
-		$folder = new Folder(FIXTURES_PATH, true, 0777);
+		$folder = new Folder(DATA_FILES_PATH, true, 0777);
 		list($dirs, $files) = $folder->read();
 		if (!$files) {
-		    $this->out($this->_colorize("There are no Fixtures yet created.", 'COMMENT'));
-		    $this->out($this->_colorize("Run 'cake fixtures g' to generate empty fixture files for each table.\n", 'COMMENT'));
+		    $this->out($this->_colorize("You have not yet created any data files for your database tables.", 'COMMENT'));
+		    $this->out($this->_colorize("Run '", 'COMMENT') . 'cake populate create' . $this->_colorize("' to create empty data files for each", 'COMMENT'));
+		    $this->out($this->_colorize("table in your database.", 'COMMENT'));
+		    $this->out();
 		    $this->hr();
 		    $this->out();
 		    exit;
 	    }
 		
-		require 'fixture_helpers.php';
-		$this->helpers = new FixtureHelpers();
+		require 'populate_helpers.php';
+		$this->helpers = new PopulateHelpers();
 		
-	    if ($fixtures == '*') {
-	        $fixtures = $this->tables;
+	    if ($models == '*') {
+	        $models = $this->uses;
 	    } else {
 	        $this->_user_defined = true;
 	    }
-		
-        foreach ((array)$fixtures as $name) {
-            if ($name == 'schema_migrations' || $name == Configure::read('Session.table')) continue;
-            if (!in_array($name, $this->tables)) {
+
+        foreach ((array)$models as $name) {
+            $name = Inflector::classify($name);
+            if (!in_array($name, $this->uses)) {
                 if (!$this->_user_defined && !isset($this->params['verbose']) && !isset($this->params['v'])) continue;
             
-                $this->out("Running fixtures for '" . $name . "' ...", false);
-                $this->out($this->_colorize("FAIL", 'ERROR') . $this->_colorize(" table $name does not exist", 'COMMENT'));
+                $this->out("Populating model '" . $name . "' ...", false);
+                $this->out("\n    " . $this->_colorize("FAIL", 'ERROR') . $this->_colorize(" model '$name' does not exist", 'COMMENT'));
                 continue;
             }
             
-            if (!file_exists(FIXTURES_PATH .DS. $name .'.yml')) {
+            $file = Inflector::tableize($name);
+            if (!file_exists(DATA_FILES_PATH .DS. $file .'.yml')) {
                 if (!$this->_user_defined && !isset($this->params['verbose']) && !isset($this->params['v'])) continue;
             
-                $this->out("Running fixtures for '".$name."' ...", false);
-                $this->out($this->_colorize("FAIL", 'ERROR') . $this->_colorize(" $name.yml does not exist", 'COMMENT'));
+                $this->out("Populating model '".$name."' ...", false);
+                $this->out("\n    " . $this->_colorize("FAIL", 'ERROR') . $this->_colorize(" $name.yml does not exist", 'COMMENT'));
                 continue;
             }
 	    
-    		$file = FIXTURES_PATH .DS. $name .'.yml';
-            if (function_exists('syck_dump')) {
-                $data = syck_load($this->_parsePhp($file));
-            } else {
-                App::import('Vendor', 'Spyc');
-                $data = Spyc::YAMLLoad($this->_parsePhp($file));
-            }
-		
+            $data = Yaml::Load($this->_parsePhp(DATA_FILES_PATH .DS. $file .'.yml'));
     		if (!is_array($data) || !count($data)) {
     		    if (!$this->_user_defined && !isset($this->params['verbose']) && !isset($this->params['v'])) continue;
 		    
-    		    $this->out("Running fixtures for '" . $name . "' ...", false);
-    		    $this->out($this->_colorize("FAIL", 'ERROR') . $this->_colorize(" unable to parse YAML", 'COMMENT'));
+    		    $this->out("Populating model '" . $name . "' ...", false);
+    		    $this->out("\n    " . $this->_colorize("FAIL", 'ERROR') . $this->_colorize(" unable to parse YAML. Maybe empty.", 'COMMENT'));
     		    continue;
     	    }
     	    
@@ -134,17 +152,27 @@ class FixturesShell extends Shell
         foreach ($this->data as $name => $records) {
             foreach ($records as $i => $record) {
                 foreach ($record as $key => $val) {
+                    $class = Inflector::classify($key);
                     if ($val == '.RANDOM') {
-                        $this->data[$name][$i][$key] = $this->data['categories'][array_rand($this->data['categories'])]['id'];
+                        if (isset($this->data[$class])) {
+                            $this->data[$name][$i][$key . '_id'] = $this->data[$class][array_rand($this->data[$class])]['id'];
+                            unset($this->data[$name][$i][$key]);
+                        } else {
+                		    $this->out("Populating model '" . $name . "' ...", false);
+                		    $this->out("\n    " . $this->_colorize("FAIL", 'ERROR') . $this->_colorize(" Data file for association '$class' not loaded/found.", 'COMMENT'));
+                		    $this->out();
+                		    $this->hr();
+                		    exit;
+                        }
                     }
                 }
             }
         }
         
         foreach ($this->data as $name => $records) {
-            $this->db->truncate($name);
-            $this->out("Running fixtures for '" . $name . "' ...", false);
-            $res = $this->{$this->modelNames[$name]}->saveAll($records, array('validate' => false));
+            $this->$name->deleteAll(array('1=1'), false);
+            $this->out("Populating model '" . $name . "' ...", false);
+            $res = $this->$name->saveAll($records, array('validate' => false));
             $this->out($this->_colorize(count($records) . ' rows inserted.', 'COMMENT'));
         }
         
@@ -155,8 +183,7 @@ class FixturesShell extends Shell
 
 	function _startFixture($name, $data)
 	{
-	    if (!$this->_loadModel($name)) return false;
-	    $model = $this->{$this->modelNames[$name]};
+	    $model = $this->$name;
 	    
 	    if ($model->actsAs && in_array('Tree', $model->actsAs)) {
 	        $model->Behaviors->detach('Tree');
@@ -200,13 +227,12 @@ class FixturesShell extends Shell
                             $f = array($f);
                         }
 
-                        $fi = Inflector::pluralize($fi);
-                        foreach ($this->_startFixture($fi, $f) as $i => $v) {
+                        foreach ($this->_startFixture($class, $f) as $i => $v) {
                             unset($v['id']);
-                            $this->data[$fi][] = $v;
+                            $this->data[$class][] = $v;
                         }
-                    } elseif ($f == '.RANDOM') {
-                        $records[$fi . '_id'] = '.RANDOM';
+                    } else {
+                        $records[$fi] = '.RANDOM';
                     }
                 } else {
                     $records[$fi] = $this->_formatColumn($fi, $f);
@@ -239,83 +265,59 @@ class FixturesShell extends Shell
         }
 	}
 	
-    function _loadModel($name)
-    {
-        $model_name = Inflector::classify($name);
-		$this->modelNames[$name] = $model_name;
-
-		if (App::import('Model', $model_name)) {
-		    if (!PHP5) {
-		        $this->{$model_name} =& new $model_name(false, false, false);
-	        } else {
-	            $this->{$model_name} = new $model_name(false, false, false);
-	        }
-	        $this->{$model_name}->setDataSource($this->dataSource);
-		} else {
-		    $this->out("Running fixtures for '" . $name . "' ...", false);
-		    $this->out($this->_colorize("FAIL", 'ERROR') . $this->_colorize(" unable to load model '$model_name'", 'COMMENT'));
-		    return false;
-		}
-		return true;
-    }
-	
-/**
- * Generates a fixture file for each database table.
- * This has been taken from the generator shell which is now deprecated
- */
+    /**
+     * Generates a fixture file for each database table.
+     * This has been taken from the generator shell which is now deprecated
+     */
 	function generate()
 	{
 	    $all_fromdb = false;
 	    
 	    if (!$this->args) {
-	        $fixtures = '*';
+	        $models = '*';
 	    } else {
 	        if ($this->args[0] == 'fromdb') {
 	            $all_fromdb = true;
-	            $fixtures = '*';
+	            $models = '*';
 	        } else {
-	            $fixtures = $this->args;
-	            if (end($fixtures) == 'fromdb') {
-	                array_pop($fixtures);
+	            $models = $this->args;
+	            if (end($models) == 'fromdb') {
+	                array_pop($models);
 	                $all_fromdb = true;
                 }
 	        }
 	    }
 		
-	    if ($fixtures == '*') {
-	        $fixtures = $this->tables;
+	    if ($models == '*') {
+	        $models = $this->uses;
 	    }
 		
 		$this->out('');
-		$data = "#\n# Fixture YAML file\n#\n#\n# Example:-\n# -\n#  first_name: Bob\n#  last_name: Bones\n#  created: NOW\n#\n";
-		foreach ($fixtures as $t) {
-		    if ($t == 'schema_migrations' || $t == Configure::read('Session.table')) continue;
+		$data = "#\n# Data file (YAML)\n#\n#\n# Example:-\n# -\n#  first_name: Bob\n#  last_name: Bones\n#  created: NOW\n#\n";
+		foreach ($models as $t) {
+            $t = Inflector::classify($t);
 		    
 		    $_option = false;
 		    if (strpos($t, ':')) list($t, $_option) = explode(':', $t);
 		    
 			if ($all_fromdb || $_option == 'fromdb') {
-			    $this->out("Generating and populating fixtures file for '".$t."' table ...", false);
+			    $this->out("Generating and populating data file for '".$t."' model ...", false);
 		    } else {
-		        $this->out("Generating fixtures file for '".$t."' table ...", false);
+		        $this->out("Generating data file for '".$t."' model ...", false);
 		    }
 		    
-			if (!in_array($t, $this->tables)) {
-			    $this->out($this->_colorize("FAIL", 'ERROR') . $this->_colorize(" table $t does not exist", 'COMMENT'));
+			if (!in_array($t, $this->uses)) {
+			    $this->out("\n    " . $this->_colorize("FAIL", 'ERROR') . $this->_colorize(" Model '$t' does not exist", 'COMMENT'));
 			    continue;
 			}
-			
-		    if (isset($this->params['force']) || isset($this->params['force']) || !file_exists(FIXTURES_PATH .DS. $t . '.yml')) {
-        	    if ($all_fromdb || $_option == 'fromdb') {
-        	       $data = $this->_fromDB($t);
-        	    }
 
-        	    $file = new File(FIXTURES_PATH .DS. $t . '.yml', true);
-				$file->write($data);
-
+            $file_name = Inflector::tableize($t);
+		    if (isset($this->params['force']) || isset($this->params['f']) || !file_exists(DATA_FILES_PATH .DS. $file_name . '.yml')) {
+        	    $file = new File(DATA_FILES_PATH .DS. $file_name . '.yml', true);
+				$file->write(($all_fromdb || $_option == 'fromdb') ? $this->_fromDB($t) : $data);
 				$this->out($this->_colorize("DONE!", 'INFO'));
 			} else {
-			    $this->out($this->_colorize("FAIL", 'ERROR') . $this->_colorize(" fixtures file already exists", 'COMMENT'));
+			    $this->out("\n    " . $this->_colorize("FAIL", 'ERROR') . $this->_colorize(" Data file already exists", 'COMMENT'));
 			}
 		}
 
@@ -348,14 +350,41 @@ class FixturesShell extends Shell
 	    $this->generate();
 	}
 	
-	function _fromDb($table)
+	
+    /**
+     * Overides Shell::_loadModels, and builds the $uses array with Models.
+     */
+	function _loadModels()
 	{
-	    $data = $this->db->query("SELECT * FROM $table");
-		if (function_exists('syck_dump')) {
-			return @syck_dump($data);
-		} else {
-			return Spyc::YAMLDump($data);
+		$folder = new Folder(MODELS);
+		list($dirs, $models) = $folder->read();
+		foreach ($models as $model) {
+		    $this->uses[] = Inflector::classify(preg_replace("/\.php$/", "", $model));
 		}
+		
+		if (empty($this->uses)) {
+            return false;
+		}
+		return parent::_loadModels();
+	}
+	
+    /**
+     * For legacy apps that have a config/fixtures directory, this will rename that
+     * to the new config/data directory.
+     */
+    function _renameFixturesDir()
+    {
+        if (file_exists(APP_PATH .'config' .DS. 'fixtures')) {
+            $folder = new Folder(APP_PATH .'config' .DS. 'fixtures');
+            $folder->mv(APP_PATH .'config' .DS. 'data');
+        }
+        define('DATA_FILES_PATH', APP_PATH .'config' .DS. 'data');
+    }
+	
+	function _fromDb($model)
+	{
+	    $this->$model->recursive = -1;
+        return Yaml::Dump(Set::extract($this->$model->find('all'), '{n}.' . $model));
 	}
 	
 	function _parsePhp($file)
@@ -437,19 +466,6 @@ class FixturesShell extends Shell
 	{
         return parent::out(' ' . $string, $newline);
 	}
-	
-	
-    var $styles = array(
-      'ERROR'    => array('bg' => 'red', 'fg' => 'white', 'bold' => true),
-      'INFO'     => array('fg' => 'green', 'bold' => true),
-      'COMMENT'  => array('fg' => 'yellow'),
-      'QUESTION' => array('bg' => 'cyan', 'fg' => 'black', 'bold' => false),
-      'BOLD'     => array('fg' => 'white', 'bold' => true),
-      'UNDERSCORE'     => array('fg' => 'white', 'underscore' => true)
-    );
-    var $options    = array('bold' => 1, 'underscore' => 4, 'blink' => 5, 'reverse' => 7, 'conceal' => 8);
-    var $foreground = array('black' => 30, 'red' => 31, 'green' => 32, 'yellow' => 33, 'blue' => 34, 'magenta' => 35, 'cyan' => 36, 'white' => 37);
-    var $background = array('black' => 40, 'red' => 41, 'green' => 42, 'yellow' => 43, 'blue' => 44, 'magenta' => 45, 'cyan' => 46, 'white' => 47);
 
 	function _colorize($text = '', $style = null)
 	{
@@ -497,5 +513,3 @@ if (!function_exists('is_id'))
     return (preg_match("/^[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$/", $id) || is_numeric($id));
   }
 }
-
-?>
