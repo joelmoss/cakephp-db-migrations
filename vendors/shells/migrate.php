@@ -17,6 +17,7 @@
 */
 
 App::import('Core', array('file', 'folder'));
+App::import('Vendor', 'Migrations.Yaml');
 
 class MigrateShell extends Shell
 {
@@ -397,13 +398,7 @@ class MigrateShell extends Shell
         $out  = '#'."\n";
         $out .= '# migration YAML file'."\n";
         $out .= '#'."\n";
-        
-        if (function_exists('syck_dump')) {
-            return syck_dump($dbShema);
-        } else {
-            $this->_loadVendor('Spyc');
-            return Spyc::YAMLDump($dbShema);
-        }
+        return Yaml::Dump($dbShema);
     }
     
     function __buildUpSchema($tableName)
@@ -693,12 +688,7 @@ class MigrateShell extends Shell
         $migration = $this->migrations[$id];
         if ($migration['format'] == 'yml') {
             $yml = $this->_parsePhp(MIGRATIONS_PATH .DS. $migration['filename']);
-            if (function_exists('syck_load')) {
-                $array = syck_load($yml);
-            } else {
-                $this->_loadVendor('Spyc');
-                $array = Spyc::YAMLLoad($yml);
-            }
+            $array = Yaml::Load($yml);
             if (!is_array($array)) return "Unable to parse YAML Migration file";
             $direction = strtoupper($direction);
         } else {
