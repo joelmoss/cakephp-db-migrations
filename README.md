@@ -62,5 +62,5 @@ into your database.
 
 Please check out the examples directory within this package.
 
-Updates, new releases and other resources can be found at [http://codaset.com/joelmoss/cakephp-db-migrations/](http://codaset.com/joelmoss/cakephp-db-migrations/)
+Updates, new releases and other resources can be found at [https://github.com/joelmoss/cakephp-db-migrations/](https://github.com/joelmoss/cakephp-db-migrations/)
 For further assistance and additional resources, please check out my Blog at [http://developingwithstyle.com](http://developingwithstyle.com)
